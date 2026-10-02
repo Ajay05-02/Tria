@@ -46,7 +46,16 @@ Stratified 5-fold cross-validation repeated 10 times. Every data-driven step is 
 | LCX | **0.750** (0.696–0.804) | 0.195 | 0.94 |
 | RCA | **0.724** (0.668–0.780) | 0.198 | 1.00 |
 
-- **Overall CAD at the pre-specified rule-out cut-off:** sensitivity 0.91, specificity 0.81, PPV 0.92, NPV 0.78.
+At each model's own cut-off, chosen inside the training folds (CAD: catch at least 90% of CAD patients, a rule-out threshold; arteries: Youden's J):
+
+| Target | Accuracy | Precision (PPV) | Recall (sensitivity) | Specificity | F1 |
+|---|---|---|---|---|---|
+| Overall CAD | 0.88 | 0.92 | 0.91 | 0.81 | 0.92 |
+| LAD | 0.79 | 0.81 | 0.85 | 0.71 | 0.83 |
+| LCX | 0.66 | 0.54 | 0.82 | 0.56 | 0.65 |
+| RCA | 0.65 | 0.53 | 0.78 | 0.57 | 0.63 |
+
+- **Overall CAD at the rule-out cut-off:** NPV 0.78. The artery cut-offs favour recall, so LCX and RCA flag most narrowed arteries at the cost of more false alarms; read their precision with that in mind.
 - **Improvement over our first model:** evaluated on the same splits, AUC rose on all four targets (+0.012 to +0.021). Calibration slopes also improved, from 1.3–2.2 (probabilities too timid) to about 1.0.
 - **Why the arteries score lower:** the dataset records ECG and wall-motion findings only as present/absent. It never says *which* leads or heart regions are affected, and that location information is what clinicians use to tell LCX from RCA disease.
 

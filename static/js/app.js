@@ -644,13 +644,26 @@ function renderMetrics() {
     return `<tr><td>${name(t)}</td><td class="num">${f(m.auc)} <span class="ci">(${f(m.auc_ci_low)}-${f(m.auc_ci_high)})</span></td>
       <td class="num">${f(m.brier)}</td><td class="num">${f(m.calibration_slope)}</td></tr>`;
   }).join("");
+  // Threshold metrics at each model's own cut-off (chosen inside the training folds)
+  const hasCut = TARGETS.every((t) => deployed[t].accuracy !== undefined);
+  const cutRows = hasCut ? TARGETS.map((t) => {
+    const m = deployed[t];
+    return `<tr><td>${name(t)}</td><td class="num">${f(m.accuracy)}</td><td class="num">${f(m.ppv)}</td>
+      <td class="num">${f(m.sensitivity)}</td><td class="num">${f(m.specificity)}</td><td class="num">${f(m.f1)}</td></tr>`;
+  }).join("") : "";
   box.innerHTML = `
     <table class="booktabs">
       <thead><tr><th>Target</th><th>ROC-AUC (95% CI)</th><th>Brier</th><th>Cal. slope</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="note">CAD at the rule-out cut-off: sensitivity <b>${pct(cath.sensitivity)}</b>, specificity <b>${pct(cath.specificity)}</b>,
-      PPV ${pct(cath.ppv)}, NPV ${pct(cath.npv)}.</p>
+    ${hasCut ? `<table class="booktabs">
+      <thead><tr><th>At the cut-off</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>Specificity</th><th>F1</th></tr></thead>
+      <tbody>${cutRows}</tbody>
+    </table>
+    <p class="note">Each model's cut-off is chosen inside the training folds: CAD to catch at least 90% of CAD patients (rule-out),
+      the arteries by Youden's J. Precision is PPV; recall is sensitivity. CAD NPV ${pct(cath.npv)}.</p>`
+    : `<p class="note">CAD at the rule-out cut-off: sensitivity <b>${pct(cath.sensitivity)}</b>, specificity <b>${pct(cath.specificity)}</b>,
+      PPV ${pct(cath.ppv)}, NPV ${pct(cath.npv)}.</p>`}
     <p class="note">${state.meta.n_patients} patients. ${ev.protocol} AUC 0.5 is guessing, 1.0 is perfect; calibration slope near 1 means the percentages hold.
     Artery risk = P(CAD) × P(artery | CAD), so it never exceeds CAD.</p>${renderExternal()}`;
 }

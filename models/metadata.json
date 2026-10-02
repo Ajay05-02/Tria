@@ -152,8 +152,8 @@
   },
   "thresholds": {
     "Cath": 0.5496518827278799,
-    "LAD": 0.6365405085073059,
-    "LCX": 0.39064140772283357,
+    "LAD": 0.6365405085073057,
+    "LCX": 0.3906414077228336,
     "RCA": 0.41870615592576416
   },
   "threshold_rules": {
@@ -620,7 +620,7 @@
         "auc_ci_low": 0.8883868268462253,
         "auc_ci_high": 0.9551636201524977,
         "brier": 0.11393661418984809,
-        "calibration_intercept": 0.014089547507773104,
+        "calibration_intercept": 0.014089547507773128,
         "calibration_slope": 2.242050601191893,
         "scaled_brier": 0.4433585242573562,
         "auc_repeat_sd": 0.004291316549520568
@@ -629,20 +629,20 @@
         "auc": 0.8491570262756702,
         "auc_ci_low": 0.805017468538391,
         "auc_ci_high": 0.8932965840129496,
-        "brier": 0.16424595876591241,
+        "brier": 0.1642459587659124,
         "calibration_intercept": 0.016728801243315626,
-        "calibration_slope": 1.883753155745234,
-        "scaled_brier": 0.3238607645798739,
+        "calibration_slope": 1.8837531557452347,
+        "scaled_brier": 0.323860764579874,
         "auc_repeat_sd": 0.006954978421676006
       },
       "LCX": {
         "auc": 0.7460129704055534,
         "auc_ci_low": 0.6905234403091925,
         "auc_ci_high": 0.8015025005019144,
-        "brier": 0.20341333437862094,
-        "calibration_intercept": 0.008150884752364848,
-        "calibration_slope": 1.6710366683539786,
-        "scaled_brier": 0.14709651004901303,
+        "brier": 0.203413334378621,
+        "calibration_intercept": 0.008150884752364865,
+        "calibration_slope": 1.6710366683539781,
+        "scaled_brier": 0.1470965100490128,
         "auc_repeat_sd": 0.007724978090195731
       },
       "RCA": {
@@ -650,8 +650,8 @@
         "auc_ci_low": 0.6474575331206539,
         "auc_ci_high": 0.7662526683088456,
         "brier": 0.2069042883470821,
-        "calibration_intercept": -0.006805289026504541,
-        "calibration_slope": 1.2965876449382712,
+        "calibration_intercept": -0.0068052890265045156,
+        "calibration_slope": 1.2965876449382716,
         "scaled_brier": 0.1183664806062722,
         "auc_repeat_sd": 0.012892179099317138
       }
@@ -662,8 +662,8 @@
         "auc_ci_low": 0.9028328135397088,
         "auc_ci_high": 0.9646427079588014,
         "brier": 0.09811472591903622,
-        "calibration_intercept": 0.020799932665123286,
-        "calibration_slope": 1.9293789324967026,
+        "calibration_intercept": 0.020799932665123273,
+        "calibration_slope": 1.9293789324967023,
         "scaled_brier": 0.5206569352968925,
         "auc_repeat_sd": 0.004501349565409226
       },
@@ -672,8 +672,8 @@
         "auc_ci_low": 0.8242849198743455,
         "auc_ci_high": 0.9073086591768608,
         "brier": 0.1480591257702456,
-        "calibration_intercept": 0.015563779462460806,
-        "calibration_slope": 1.6158652035591623,
+        "calibration_intercept": 0.015563779462460828,
+        "calibration_slope": 1.6158652035591625,
         "scaled_brier": 0.3904959071903651,
         "auc_repeat_sd": 0.006227267697630649
       },
@@ -682,7 +682,7 @@
         "auc_ci_low": 0.7081903522915385,
         "auc_ci_high": 0.8158871047782459,
         "brier": 0.1950381895874274,
-        "calibration_intercept": 0.004154585432502389,
+        "calibration_intercept": 0.004154585432502377,
         "calibration_slope": 1.4374174253698047,
         "scaled_brier": 0.18221313720167498,
         "auc_repeat_sd": 0.007856197535742706
@@ -692,7 +692,7 @@
         "auc_ci_low": 0.6678077173793294,
         "auc_ci_high": 0.7823361608347241,
         "brier": 0.20145814986579708,
-        "calibration_intercept": -0.006804263992690815,
+        "calibration_intercept": -0.006804263992690808,
         "calibration_slope": 1.1861717027977157,
         "scaled_brier": 0.14157285431036093,
         "auc_repeat_sd": 0.008316104770632911
@@ -704,8 +704,8 @@
         "auc_ci_low": 0.9003528707398992,
         "auc_ci_high": 0.9640255881787896,
         "brier": 0.08635065844894758,
-        "calibration_intercept": -0.00964667879044314,
-        "calibration_slope": 0.9487304384474766,
+        "calibration_intercept": -0.009646678790443185,
+        "calibration_slope": 0.9487304384474765,
         "sensitivity": 0.9087962962962963,
         "specificity": 0.8080459770114944,
         "ppv": 0.9216294596295581,
@@ -721,8 +721,8 @@
         "auc_ci_low": 0.8228985715210037,
         "auc_ci_high": 0.9065068629691766,
         "brier": 0.1419330526472204,
-        "calibration_intercept": -0.023884659360324086,
-        "calibration_slope": 0.9483180106558132,
+        "calibration_intercept": -0.02388465936032408,
+        "calibration_slope": 0.948318010655813,
         "sensitivity": 0.859322033898305,
         "specificity": 0.7238095238095238,
         "ppv": 0.8142611853152204,
@@ -731,14 +731,14 @@
         "f1": 0.8358121808218766,
         "scaled_brier": 0.4157146609950383,
         "auc_repeat_sd": 0.006525371211510886,
-        "mean_threshold": 0.52622999024544
+        "mean_threshold": 0.5262299902454401
       },
       "LCX": {
         "auc": 0.7610613810741689,
         "auc_ci_low": 0.7070555729197638,
         "auc_ci_high": 0.8150671892285738,
         "brier": 0.19275805709911142,
-        "calibration_intercept": -0.003161517132998093,
+        "calibration_intercept": -0.003161517132998116,
         "calibration_slope": 1.027859544565887,
         "sensitivity": 0.7411764705882353,
         "specificity": 0.6391304347826087,
@@ -748,7 +748,7 @@
         "f1": 0.6445460758476345,
         "scaled_brier": 0.19177363608822062,
         "auc_repeat_sd": 0.009436220692675246,
-        "mean_threshold": 0.3819673799682277
+        "mean_threshold": 0.3819673799682276
       },
       "RCA": {
         "auc": 0.7233825304000744,
@@ -774,30 +774,51 @@
         "auc_ci_low": 0.8138159152016516,
         "auc_ci_high": 0.9011782557247228,
         "brier": 0.1432149554694942,
-        "calibration_intercept": 0.03141611246167382,
+        "calibration_intercept": 0.031416112461673806,
         "calibration_slope": 1.1477479818752465,
+        "sensitivity": 0.8502824858757062,
+        "specificity": 0.7142857142857143,
+        "ppv": 0.8073366583567039,
+        "npv": 0.7737468073037604,
+        "accuracy": 0.7937293729372937,
+        "f1": 0.8279588591767173,
         "scaled_brier": 0.4104375461080265,
-        "auc_repeat_sd": 0.005693230635293677
+        "auc_repeat_sd": 0.005693230635293677,
+        "mean_threshold": 0.6050139318922215
       },
       "LCX": {
         "auc": 0.7499223602484472,
         "auc_ci_low": 0.6956427646686173,
         "auc_ci_high": 0.8042019558282771,
-        "brier": 0.195430316955754,
-        "calibration_intercept": -9.820489825038501e-05,
+        "brier": 0.19543031695575402,
+        "calibration_intercept": -9.82048982504289e-05,
         "calibration_slope": 0.9348955307004619,
-        "scaled_brier": 0.18056896376549048,
-        "auc_repeat_sd": 0.009145864942095999
+        "sensitivity": 0.8168067226890757,
+        "specificity": 0.5565217391304348,
+        "ppv": 0.5446445639375979,
+        "npv": 0.8258823094257289,
+        "accuracy": 0.6587458745874588,
+        "f1": 0.6527791351799241,
+        "scaled_brier": 0.18056896376549036,
+        "auc_repeat_sd": 0.009145864942095999,
+        "mean_threshold": 0.3891116844732176
       },
       "RCA": {
         "auc": 0.7239812494198458,
         "auc_ci_low": 0.6681500168386064,
         "auc_ci_high": 0.7798124820010854,
         "brier": 0.19816334742372038,
-        "calibration_intercept": -8.489279191072115e-05,
-        "calibration_slope": 0.9988213981485986,
+        "calibration_intercept": -8.489279191058341e-05,
+        "calibration_slope": 0.9988213981485983,
+        "sensitivity": 0.7807017543859649,
+        "specificity": 0.5735449735449735,
+        "ppv": 0.5250340217115783,
+        "npv": 0.8134668441978334,
+        "accuracy": 0.6514851485148515,
+        "f1": 0.6274704548806493,
         "scaled_brier": 0.15561223597770613,
-        "auc_repeat_sd": 0.014201086826029587
+        "auc_repeat_sd": 0.014201086826029587,
+        "mean_threshold": 0.4138219689609386
       }
     },
     "coherence_two_step": 0.0,

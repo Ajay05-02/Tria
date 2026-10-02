@@ -102,8 +102,10 @@ def main():
     cal = {t: np.zeros((R, n)) for t in y.columns}
     pred = {t: np.zeros((R, n), dtype=int) for t in y.columns}
     thresholds = {t: [] for t in y.columns}
-    # Two-step vessels
+    # Two-step vessels, with a cut-off chosen inside each training fold (for accuracy, precision, recall, F1)
     joint = {v: np.zeros((R, n)) for v in VESSELS}
+    joint_pred = {v: np.zeros((R, n), dtype=int) for v in VESSELS}
+    joint_thresholds = {v: [] for v in VESSELS}
 
     for r in range(R):
         for t in y.columns:
@@ -123,6 +125,17 @@ def main():
         # Two-step: reuse the Cath-stratified splits so P(CAD) is out-of-fold for each test patient
         for tr, te in StratifiedKFold(n_splits=5, shuffle=True, random_state=r).split(Xf, y_cath):
             cad_tr = tr[y_cath[tr] == 1]
+            # Out-of-fold P(CAD) and P(vessel | CAD) for the training patients, to pick each vessel's cut-off
+            # without touching the test patients (same recipe as train.py, applied inside this fold)
+            inner_cut = StratifiedKFold(n_splits=5, shuffle=True, random_state=200 + r)
+            pc_in_raw = cross_val_predict(make_rf(), Xf.iloc[tr], y_cath[tr], cv=inner_cut, method="predict_proba")[:, 1]
+            pc_in = apply_platt(fit_platt(pc_in_raw, y_cath[tr]), pc_in_raw)
+            cond_in_raw = {v: np.zeros(len(tr)) for v in VESSELS}
+            for itr, ite in inner_cut.split(Xf.iloc[tr], y_cath[tr]):
+                itr_cad = itr[y_cath[tr][itr] == 1]
+                for v in VESSELS:
+                    yv_tr = y[v].values[tr]
+                    cond_in_raw[v][ite] = make_rf().fit(Xf.iloc[tr].iloc[itr_cad], yv_tr[itr_cad])                         .predict_proba(Xf.iloc[tr].iloc[ite])[:, 1]
             for v in VESSELS:
                 yv = y[v].values[cad_tr]
                 inner = StratifiedKFold(n_splits=5, shuffle=True, random_state=100 + r)
@@ -130,6 +143,11 @@ def main():
                 platt = fit_platt(p_inner, yv)
                 p_cond = apply_platt(platt, make_rf().fit(Xf.iloc[cad_tr], yv).predict_proba(Xf.iloc[te])[:, 1])
                 joint[v][r, te] = cal["Cath"][r, te] * p_cond
+                yv_tr, is_cad = y[v].values[tr], y_cath[tr] == 1
+                platt_cut = fit_platt(cond_in_raw[v][is_cad], yv_tr[is_cad])
+                thr_v = pick_threshold(v, yv_tr, pc_in * apply_platt(platt_cut, cond_in_raw[v]))
+                joint_pred[v][r, te] = (joint[v][r, te] >= thr_v).astype(int)
+                joint_thresholds[v].append(thr_v)
         print(f"repeat {r + 1}/{R} done ({time.time() - start:.0f} s)", flush=True)
 
     result = {
@@ -139,7 +157,9 @@ def main():
         "v2_features_uncalibrated": {t: summarise(y[t].values, v2raw[t]) for t in y.columns},
         "v2_calibrated_with_threshold": {t: {**summarise(y[t].values, cal[t], pred[t]),
                                              "mean_threshold": float(np.mean(thresholds[t]))} for t in y.columns},
-        "v2_two_step_vessels (deployed)": {v: summarise(y[v].values, joint[v]) for v in VESSELS},
+        "v2_two_step_vessels (deployed)": {v: {**summarise(y[v].values, joint[v], joint_pred[v]),
+                                               "mean_threshold": float(np.mean(joint_thresholds[v]))}
+                                           for v in VESSELS},
     }
     vessel_max = np.max([joint[v].mean(axis=0) for v in VESSELS], axis=0)
     result["coherence_two_step"] = float(np.mean(vessel_max > cal["Cath"].mean(axis=0) + 1e-9))
