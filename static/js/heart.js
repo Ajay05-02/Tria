@@ -1,4 +1,4 @@
-// CardioVision 3D: procedural heart, coronary arteries and torso rendered with Three.js.
+// flowstate: procedural heart, coronary arteries and torso rendered with Three.js.
 //
 // Heart-local frame: +y points to the base (top), the apex is at the bottom.
 // theta is the angle around the long axis: 0 = anterior (+z), 90° = patient's left (+x),

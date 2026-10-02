@@ -15,7 +15,7 @@ Two audiences, weighted equally:
 
 ## Product Purpose
 
-CardioVision 3D predicts overall coronary artery disease (CAD, ≥50% stenosis) and per-artery stenosis risk for the LAD, LCX and RCA from 55 routine clinical inputs. It maps each artery's risk onto an interactive 3D heart and explains every prediction with SHAP values and the CAD Consortium clinical score. Success means a viewer understands a patient's risk, which artery drives it and why within seconds, and trusts the numbers because the validation is shown honestly.
+flowstate predicts overall coronary artery disease (CAD, ≥50% stenosis) and per-artery stenosis risk for the LAD, LCX and RCA from 55 routine clinical inputs. It maps each artery's risk onto an interactive 3D heart and explains every prediction with SHAP values and the CAD Consortium clinical score. Success means a viewer understands a patient's risk, which artery drives it and why within seconds, and trusts the numbers because the validation is shown honestly.
 
 ## Positioning
 
@@ -38,7 +38,7 @@ CardioVision 3D predicts overall coronary artery disease (CAD, ≥50% stenosis) 
 
 ## Brand Commitments
 
-- Name: **CardioVision 3D**.
+- Name: **flowstate** (lowercase; formerly CardioVision 3D). It names coronary blood flow, which stenosis restricts, and the "flow state" of focus. Tagline: "check your heart's flow state".
 - Voice: plain, specific, honest about limits. No hype.
 - The educational-prototype disclaimer must stay visible: not a medical device, not a substitute for angiography, trained on 303 patients from one centre in Tehran.
 

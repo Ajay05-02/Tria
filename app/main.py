@@ -1,4 +1,4 @@
-"""CardioVision 3D web server: serves the dashboard and a small prediction API.
+"""flowstate web server: serves the dashboard and a small prediction API.
 
   GET  /api/meta              form layout, thresholds, validation metrics
   GET  /api/patients/{index}  inputs and true labels of a dataset patient (for demos)
@@ -96,7 +96,7 @@ META_RESPONSE = {
                  for i in range(len(PATIENTS_Y))],
 }
 
-app = FastAPI(title="CardioVision 3D", version=META["version"])
+app = FastAPI(title="flowstate", version=META["version"])
 
 
 @app.middleware("http")

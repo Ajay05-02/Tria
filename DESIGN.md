@@ -1,5 +1,5 @@
 ---
-name: CardioVision 3D
+name: flowstate
 description: A patient as a live journal figure; coronary risk painted onto a realistic 3D heart.
 colors:
   paper: "#eff1ee"
@@ -137,7 +137,7 @@ components:
     padding: "7px 24px"
 ---
 
-# Design System: CardioVision 3D
+# Design System: flowstate
 
 ## Overview
 
@@ -162,7 +162,7 @@ The system explicitly rejects the dark navy, cyan-accent card dashboard, and the
 A cool, near-neutral print palette with a single blue voice and a data-only risk ramp.
 
 ### Primary
-- **Journal Blue** (journal-blue): primary buttons, the selected tab underline, selected dot-plot row and vessel label border, link buttons, focus outlines, caret, checkbox accent, and the "3D" in the wordmark. Deepens to Journal Blue Deep on hover; Journal Blue Soft is the selected-row wash, quiet-button hover and text selection.
+- **Journal Blue** (journal-blue): primary buttons, the selected tab underline, selected dot-plot row and vessel label border, link buttons, focus outlines, caret, checkbox accent, and "state" in the lowercase flowstate wordmark. Deepens to Journal Blue Deep on hover; Journal Blue Soft is the selected-row wash, quiet-button hover and text selection.
 
 ### Data: risk ramp
 - **Risk Low / Risk Mid / Risk High** (risk-low, risk-mid, risk-high): a three-stop ramp anchored so that each model's own cut-off sits exactly on Risk Mid, eased over a window of 30 points either side. A probability 30 or more points below the cut-off is full Risk Low and 30 or more above is full Risk High; green to ochre eases with t squared (green holds below the cut-off) and ochre to red with t to the 0.7 (red arrives quickly above it). The colour-bar legend uses the exact computed stops of that curve. The same three values are declared in the stylesheet and in the heart renderer, and they colour the coronary arteries, the vessel label swatches, panel B markers, the legend bar, and the SHAP bars (Risk High raises, Risk Low lowers).

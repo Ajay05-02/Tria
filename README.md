@@ -1,5 +1,5 @@
 ---
-title: CardioVision 3D
+title: flowstate
 emoji: 🫀
 colorFrom: red
 colorTo: blue
@@ -9,7 +9,9 @@ pinned: false
 short_description: Coronary artery disease risk mapped onto an interactive 3D heart
 ---
 
-# CardioVision 3D
+# flowstate
+
+*Check your heart's flow state.*
 
 **Predicts coronary artery disease (CAD) and the stenosis risk of each main coronary artery (LAD, LCX, RCA) from routine clinical data, then maps the risk onto an interactive 3D heart.**
 
@@ -17,7 +19,7 @@ Built for the **Multimodal AI Hackathon 2026, Track A: Cardiovascular Risk Visua
 
 > ⚠ **Educational decision-support prototype only.** Not a medical device and not a substitute for coronary angiography or formal diagnostic imaging.
 
-![CardioVision 3D dashboard](docs/screenshot.jpg)
+![flowstate dashboard](docs/screenshot.jpg)
 
 ## What it does
 
@@ -122,8 +124,8 @@ python train.py                  # copies both reports into models/metadata.json
 With Docker, which is also how the Hugging Face Space runs:
 
 ```bash
-docker build -t cardiovision .
-docker run -p 7860:7860 cardiovision
+docker build -t flowstate .
+docker run -p 7860:7860 flowstate
 ```
 
 ## API

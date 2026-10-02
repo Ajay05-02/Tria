@@ -1,4 +1,4 @@
-# CardioVision 3D, ready for Hugging Face Spaces (Docker SDK) or any container host
+# flowstate, ready for Hugging Face Spaces (Docker SDK) or any container host
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1

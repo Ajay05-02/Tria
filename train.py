@@ -1,4 +1,4 @@
-"""Train the CardioVision 3D models (v2), the same recipe as Colab "Model improvement (v2)", Cell 15.
+"""Train the flowstate models (v2), the same recipe as Colab "Model improvement (v2)", Cell 15.
 
   P(CAD)    = Platt(random forest on 56 features)
   P(vessel) = P(CAD) x Platt(random forest trained on CAD patients only)

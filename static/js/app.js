@@ -1,4 +1,4 @@
-// CardioVision 3D: dashboard logic (patient table, API calls, figure panels, explanations)
+// flowstate: dashboard logic (patient table, API calls, figure panels, explanations)
 import { createHeartViewer, riskScore, riskColor } from "./heart.js";
 
 const $ = (id) => document.getElementById(id);
