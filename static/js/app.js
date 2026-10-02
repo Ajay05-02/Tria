@@ -486,7 +486,31 @@ function renderMetrics() {
     <p class="note">CAD at the rule-out cut-off: sensitivity <b>${pct(cath.sensitivity)}</b>, specificity <b>${pct(cath.specificity)}</b>,
       PPV ${pct(cath.ppv)}, NPV ${pct(cath.npv)}.</p>
     <p class="note">${state.meta.n_patients} patients. ${ev.protocol} AUC 0.5 is guessing, 1.0 is perfect; calibration slope near 1 means the percentages hold.
-    Artery risk = P(CAD) × P(artery | CAD), so it never exceeds CAD.</p>`;
+    Artery risk = P(CAD) × P(artery | CAD), so it never exceeds CAD.</p>${renderExternal()}`;
+}
+
+// Five-hospital check of a basic-input CAD model (external_validation.py)
+const HOSPITAL = { Tehran: ["Tehran", "Iran"], Cleveland: ["Cleveland", "USA"], Hungary: ["Budapest", "Hungary"],
+  Switzerland: ["Zurich, Basel", "Switzerland"], "Long Beach": ["Long Beach", "USA"] };
+function renderExternal() {
+  const ext = state.meta.external_validation;
+  if (!ext) return "";
+  const rows = ext.calibration.map((c) => `<tr><td>${(HOSPITAL[c.hospital] ?? [c.hospital])[0]} <span class="ci">${(HOSPITAL[c.hospital] ?? [])[1] ?? ""}</span></td>
+    <td class="num">${c.n}</td><td class="num">${pct(ext.hospitals[c.hospital].cad_rate)}</td>
+    <td class="num">${c.auc.toFixed(2)} <span class="ci">(${c.ci95[0].toFixed(2)}-${c.ci95[1].toFixed(2)})</span></td></tr>`).join("");
+  const mean = ext.loco_auc[ext.chosen_model].Mean;
+  return `
+    <h3 class="t2-sub">Five-hospital check</h3>
+    <p class="note">A ${ext.chosen_model.toLowerCase()} on 7 basic inputs (age, sex, chest pain, blood pressure, cholesterol, fasting sugar, resting ECG),
+      trained on four hospitals and tested on the fifth, ${ext.n_patients.toLocaleString("en")} patients in all.</p>
+    <table class="booktabs">
+      <thead><tr><th>Held-out hospital</th><th>Patients</th><th>CAD</th><th>ROC-AUC (95% CI)</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td>Mean</td><td></td><td></td><td class="num">${mean.toFixed(2)}</td></tr></tfoot>
+    </table>
+    <p class="note">Variety beats volume: 303 patients drawn from four hospitals generalise about as well as all ~1,000.
+      Percentages shift with each hospital's referral mix, so a new hospital should recalibrate before use.
+      This basic model is a check only; the predictions above come from the full 55-input model.</p>`;
 }
 
 init().catch((err) => {

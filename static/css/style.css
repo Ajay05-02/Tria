@@ -342,6 +342,7 @@ h2 { font-size: var(--t-md); font-weight: 700; letter-spacing: -0.005em; }
 .table2 summary h2::after { content: " (show)"; font-weight: 500; color: var(--accent); font-size: var(--t-sm); }
 .table2[open] summary h2::after { content: " (hide)"; }
 .summary-line { display: block; margin-top: 3px; font-size: var(--t-xs); color: var(--ink-3); }
+.t2-sub { margin: 18px 0 2px; font-size: var(--t-sm); font-weight: 700; }
 
 .footer { margin-top: 24px; padding: 12px 0 20px; border-top: 2px solid var(--ink); color: var(--ink-3); font-size: var(--t-xs); }
 

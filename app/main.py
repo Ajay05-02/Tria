@@ -90,6 +90,7 @@ META_RESPONSE = {
     "threshold_rules": META["threshold_rules"],
     "positive_rate": META["positive_rate"],
     "evaluation": META.get("evaluation"),
+    "external_validation": META.get("external_validation"),
     "structure": META["structure"],
     "patients": [{"index": int(i), "labels": {t: int(PATIENTS_Y.loc[i, t]) for t in PATIENTS_Y.columns}}
                  for i in range(len(PATIENTS_Y))],

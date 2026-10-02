@@ -1,0 +1,220 @@
+{
+  "prereg": {
+    "inputs": "age, sex, cp, trestbps, chol (0 = missing), fbs, restecg; no missing-value indicators",
+    "validation": "leave one hospital out: train on 4 hospitals, test on the 5th, for all 5",
+    "candidates": [
+      "Logistic regression",
+      "Random forest",
+      "Gradient boosting"
+    ],
+    "selection_rule": "highest mean AUC over the 5 held-out hospitals; if within 0.01, choose the simpler model"
+  },
+  "chosen_model": "Logistic regression",
+  "hospitals": {
+    "Tehran": {
+      "n": 303,
+      "cad_rate": 0.713
+    },
+    "Cleveland": {
+      "n": 303,
+      "cad_rate": 0.459
+    },
+    "Hungary": {
+      "n": 294,
+      "cad_rate": 0.361
+    },
+    "Switzerland": {
+      "n": 123,
+      "cad_rate": 0.935
+    },
+    "Long Beach": {
+      "n": 200,
+      "cad_rate": 0.745
+    }
+  },
+  "n_patients": 1223,
+  "loco_auc": {
+    "Logistic regression": {
+      "Tehran": 0.7679,
+      "Cleveland": 0.7824,
+      "Hungary": 0.8293,
+      "Switzerland": 0.7783,
+      "Long Beach": 0.6732,
+      "Mean": 0.7662
+    },
+    "Random forest": {
+      "Tehran": 0.7518,
+      "Cleveland": 0.7682,
+      "Hungary": 0.8174,
+      "Switzerland": 0.6957,
+      "Long Beach": 0.639,
+      "Mean": 0.7344
+    },
+    "Gradient boosting": {
+      "Tehran": 0.7488,
+      "Cleveland": 0.7578,
+      "Hungary": 0.8232,
+      "Switzerland": 0.719,
+      "Long Beach": 0.6405,
+      "Mean": 0.7379
+    }
+  },
+  "data_vs_variety": [
+    {
+      "hospital": "Cleveland",
+      "n_test": 303,
+      "tehran_only": {
+        "n_train": 303,
+        "auc": 0.727,
+        "ci95": [
+          0.67,
+          0.788
+        ]
+      },
+      "other_4": {
+        "n_train": 920,
+        "auc": 0.782,
+        "ci95": [
+          0.73,
+          0.833
+        ]
+      },
+      "varied_303": {
+        "auc_mean": 0.773,
+        "auc_sd": 0.014
+      }
+    },
+    {
+      "hospital": "Hungary",
+      "n_test": 294,
+      "tehran_only": {
+        "n_train": 303,
+        "auc": 0.711,
+        "ci95": [
+          0.651,
+          0.773
+        ]
+      },
+      "other_4": {
+        "n_train": 929,
+        "auc": 0.829,
+        "ci95": [
+          0.779,
+          0.875
+        ]
+      },
+      "varied_303": {
+        "auc_mean": 0.829,
+        "auc_sd": 0.012
+      }
+    },
+    {
+      "hospital": "Long Beach",
+      "n_test": 200,
+      "tehran_only": {
+        "n_train": 303,
+        "auc": 0.608,
+        "ci95": [
+          0.519,
+          0.686
+        ]
+      },
+      "other_4": {
+        "n_train": 1023,
+        "auc": 0.673,
+        "ci95": [
+          0.58,
+          0.753
+        ]
+      },
+      "varied_303": {
+        "auc_mean": 0.665,
+        "auc_sd": 0.009
+      }
+    },
+    {
+      "hospital": "Switzerland",
+      "n_test": 123,
+      "tehran_only": {
+        "n_train": 303,
+        "auc": 0.593,
+        "ci95": [
+          0.32,
+          0.853
+        ]
+      },
+      "other_4": {
+        "n_train": 1100,
+        "auc": 0.778,
+        "ci95": [
+          0.55,
+          0.941
+        ]
+      },
+      "varied_303": {
+        "auc_mean": 0.767,
+        "auc_sd": 0.025
+      }
+    }
+  ],
+  "calibration": [
+    {
+      "hospital": "Tehran",
+      "n": 303,
+      "predicted_rate": 0.347,
+      "actual_rate": 0.713,
+      "auc": 0.768,
+      "ci95": [
+        0.704,
+        0.83
+      ]
+    },
+    {
+      "hospital": "Cleveland",
+      "n": 303,
+      "predicted_rate": 0.572,
+      "actual_rate": 0.459,
+      "auc": 0.782,
+      "ci95": [
+        0.729,
+        0.834
+      ]
+    },
+    {
+      "hospital": "Hungary",
+      "n": 294,
+      "predicted_rate": 0.482,
+      "actual_rate": 0.361,
+      "auc": 0.829,
+      "ci95": [
+        0.78,
+        0.875
+      ]
+    },
+    {
+      "hospital": "Switzerland",
+      "n": 123,
+      "predicted_rate": 0.671,
+      "actual_rate": 0.935,
+      "auc": 0.778,
+      "ci95": [
+        0.559,
+        0.941
+      ]
+    },
+    {
+      "hospital": "Long Beach",
+      "n": 200,
+      "predicted_rate": 0.776,
+      "actual_rate": 0.745,
+      "auc": 0.673,
+      "ci95": [
+        0.587,
+        0.758
+      ]
+    }
+  ],
+  "versions": {
+    "scikit-learn": "1.9.0"
+  }
+}

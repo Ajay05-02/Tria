@@ -5,7 +5,8 @@
 
 The two-step vessel model guarantees P(vessel) <= P(CAD), because a blocked artery means CAD.
 Honest performance estimates come from evaluate.py (repeated nested cross-validation),
-whose output reports/evaluation_v2.json is copied into models/metadata.json when present.
+whose output reports/evaluation_v2.json is copied into models/metadata.json when present, together with
+reports/external_validation.json from external_validation.py (the five-hospital check of a basic-input model).
 
 Run:  python train.py   (about 20 seconds)
 """
@@ -24,6 +25,7 @@ from app.pipeline import (ENGINEERED, RARE_COLS, REDUNDANT_COLS, ROOT, VESSELS, 
 PROCESSED = ROOT / "data" / "processed"
 MODELS = ROOT / "models"
 EVALUATION = ROOT / "reports" / "evaluation_v2.json"
+EXTERNAL = ROOT / "reports" / "external_validation.json"   # written by external_validation.py
 
 
 def main():
@@ -96,6 +98,7 @@ def main():
         "model": "RandomForestClassifier(n_estimators=300, min_samples_leaf=3, random_state=42) + Platt scaling",
         "versions": {"scikit-learn": sklearn.__version__, "pandas": pd.__version__, "numpy": np.__version__},
         "evaluation": json.loads(EVALUATION.read_text()) if EVALUATION.exists() else None,
+        "external_validation": json.loads(EXTERNAL.read_text()) if EXTERNAL.exists() else None,
     }
     (MODELS / "metadata.json").write_text(json.dumps(meta, indent=2))
     print("Saved models/ and models/metadata.json"
