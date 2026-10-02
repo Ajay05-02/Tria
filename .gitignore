@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+data/processed/
+
+# Impeccable working files (review captures, decision-page logs); the design record stays in DESIGN.md
+.impeccable/questions/
+.impeccable/review/

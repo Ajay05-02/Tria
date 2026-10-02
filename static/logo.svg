@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CardioVision 3D">
+  <!-- CardioVision mark: a faceted (3D) heart in ink and journal blue, with the red risk marker from panel B -->
+  <g stroke="#eff1ee" stroke-width="1.2" stroke-linejoin="round">
+    <path d="M32 16 L21 8 L7 20 L9 33 L32 57 Z" fill="#14171c"/>
+    <path d="M9 33 L32 57 L22 34 Z" fill="#2c3038"/>
+    <path d="M32 16 L43 8 L57 20 L55 33 L32 57 Z" fill="#1d4f80"/>
+    <path d="M32 16 L43 8 L50 13 L36 31 Z" fill="#4f7fae"/>
+  </g>
+  <circle cx="36" cy="31" r="4.4" fill="#c8352b" stroke="#eff1ee" stroke-width="1.8"/>
+</svg>

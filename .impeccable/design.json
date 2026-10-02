@@ -1,0 +1,526 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-02T00:00:00Z",
+  "title": "Design System: CardioVision 3D",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Journal Stock",
+        "canonical": "#eff1ee",
+        "tonalRamp": [
+          "#22241f",
+          "#3a3d37",
+          "#555952",
+          "#73776f",
+          "#959990",
+          "#b7bbb2",
+          "#d7dad3",
+          "#eff1ee"
+        ]
+      },
+      "figure-ground": {
+        "role": "neutral",
+        "displayName": "Figure Ground",
+        "canonical": "#f9faf8",
+        "tonalRamp": [
+          "#232421",
+          "#3b3d39",
+          "#575954",
+          "#757872",
+          "#979a94",
+          "#babcb7",
+          "#dcddda",
+          "#f9faf8"
+        ]
+      },
+      "field": {
+        "role": "neutral",
+        "displayName": "Field White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#262626",
+          "#3d3d3d",
+          "#595959",
+          "#777777",
+          "#999999",
+          "#bbbbbb",
+          "#dddddd",
+          "#ffffff"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#14171c",
+        "tonalRamp": [
+          "#14171c",
+          "#2b2f36",
+          "#444a54",
+          "#5f6670",
+          "#7e848d",
+          "#a0a5ac",
+          "#c4c7cc",
+          "#e7e9eb"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Grey Ink 2",
+        "canonical": "#444a54",
+        "tonalRamp": [
+          "#14171c",
+          "#2b2f36",
+          "#444a54",
+          "#5f6670",
+          "#7e848d",
+          "#a0a5ac",
+          "#c4c7cc",
+          "#e7e9eb"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Grey Ink 3",
+        "canonical": "#5f6670",
+        "tonalRamp": [
+          "#14171c",
+          "#2b2f36",
+          "#444a54",
+          "#5f6670",
+          "#7e848d",
+          "#a0a5ac",
+          "#c4c7cc",
+          "#e7e9eb"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "#c9cdc6",
+        "tonalRamp": [
+          "#1f211d",
+          "#363933",
+          "#51554d",
+          "#6e7369",
+          "#9fa59c",
+          "#b5bab2",
+          "#c9cdc6",
+          "#dde0da"
+        ]
+      },
+      "rule-soft": {
+        "role": "neutral",
+        "displayName": "Soft Rule",
+        "canonical": "#dde0da",
+        "tonalRamp": [
+          "#1f211d",
+          "#363933",
+          "#51554d",
+          "#6e7369",
+          "#9fa59c",
+          "#b5bab2",
+          "#c9cdc6",
+          "#dde0da"
+        ]
+      },
+      "journal-blue": {
+        "role": "primary",
+        "displayName": "Journal Blue",
+        "canonical": "#1d4f80",
+        "tonalRamp": [
+          "#0b1d30",
+          "#123250",
+          "#163f67",
+          "#1d4f80",
+          "#3f6d9b",
+          "#7598bd",
+          "#aec4db",
+          "#dce6ef"
+        ]
+      },
+      "journal-blue-deep": {
+        "role": "primary",
+        "displayName": "Journal Blue Deep",
+        "canonical": "#163f67",
+        "tonalRamp": [
+          "#0b1d30",
+          "#123250",
+          "#163f67",
+          "#1d4f80",
+          "#3f6d9b",
+          "#7598bd",
+          "#aec4db",
+          "#dce6ef"
+        ]
+      },
+      "journal-blue-soft": {
+        "role": "primary",
+        "displayName": "Journal Blue Soft",
+        "canonical": "#dce6ef",
+        "tonalRamp": [
+          "#0b1d30",
+          "#123250",
+          "#163f67",
+          "#1d4f80",
+          "#3f6d9b",
+          "#7598bd",
+          "#aec4db",
+          "#dce6ef"
+        ]
+      },
+      "risk-low": {
+        "role": "data",
+        "displayName": "Risk Low",
+        "canonical": "#2f9a68",
+        "tonalRamp": [
+          "#0c2a1c",
+          "#164a32",
+          "#22704b",
+          "#2f9a68",
+          "#5cb88c",
+          "#93d2b2",
+          "#c4e6d4",
+          "#dfeee5"
+        ]
+      },
+      "risk-mid": {
+        "role": "data",
+        "displayName": "Risk Mid (cut-off)",
+        "canonical": "#e0a21a",
+        "tonalRamp": [
+          "#3a2600",
+          "#5c3c00",
+          "#7a4b00",
+          "#a8740c",
+          "#e0a21a",
+          "#ecc165",
+          "#f3d9a2",
+          "#f7ecd2"
+        ]
+      },
+      "risk-high": {
+        "role": "data",
+        "displayName": "Risk High",
+        "canonical": "#c8352b",
+        "tonalRamp": [
+          "#3a0e0a",
+          "#621a14",
+          "#a32b22",
+          "#c8352b",
+          "#da6a61",
+          "#e89c96",
+          "#f1c6c2",
+          "#f6e2df"
+        ]
+      },
+      "high-ink": {
+        "role": "data",
+        "displayName": "High Ink",
+        "canonical": "#a32b22"
+      },
+      "high-bg": {
+        "role": "data",
+        "displayName": "High Wash",
+        "canonical": "#f6e2df"
+      },
+      "low-ink": {
+        "role": "data",
+        "displayName": "Low Ink",
+        "canonical": "#22704b"
+      },
+      "low-bg": {
+        "role": "data",
+        "displayName": "Low Wash",
+        "canonical": "#dfeee5"
+      },
+      "warn-ink": {
+        "role": "semantic",
+        "displayName": "Warning Ochre Ink",
+        "canonical": "#7a4b00"
+      },
+      "warn-bg": {
+        "role": "semantic",
+        "displayName": "Warning Wash",
+        "canonical": "#f7ecd2"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The overall CAD percentage only; one per screen."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Wordmark and the figure plate letter."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel and table headings, with the panel label bolded inside the heading."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Probabilities beside the dot plot; tentative artery values drop to 500 in Grey Ink 2."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Base text, tabular figures on."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, tabs, field labels, table cells, captions."
+      },
+      "note": {
+        "displayName": "Note",
+        "purpose": "Units, notes, axis ticks, footer in Grey Ink 3."
+      }
+    },
+    "heartMaterials": {
+      "source": "static/js/heart.js",
+      "myocardium": [
+        "#3e0e11",
+        "#66201d"
+      ],
+      "atrium": "#43141f",
+      "myocardiumFinish": "roughness 0.48, clearcoat 0.45, sheen 0.2 (#9c3328), fine fbm surface relief",
+      "epicardialFat": [
+        "#ead6a8",
+        "#cdae74"
+      ],
+      "fatBehaviour": "irregular deposits along the grooves and over the base, thinning toward the apex",
+      "aorta": "#d9b9a6",
+      "pulmonaryArtery": "#c99d8f",
+      "venaeCavae": "#2e2038",
+      "pulmonaryVeins": "#4e1d26",
+      "greatVessels": "tapered tubes ending in cut discs with dark lumen (#3a0d10 arterial, #1a1018 venous); no sphere caps",
+      "coronaries": "risk ramp via riskScore/riskColor, toneMapped false so rendered hue equals the label swatch",
+      "renderer": "ACESFilmic tone mapping, exposure 1.0; hemisphere, warm key, neutral fill, cool rim lights",
+      "labels": "LABEL_NUDGE moves the LCX anchor clear of the aorta; labels clamped at least 12px inside the canvas via CSS translate"
+    },
+    "shadows": [
+      {
+        "name": "label-lift",
+        "value": "0 1px 3px rgba(20, 23, 28, 0.12)",
+        "purpose": "Vessel labels floating over the 3D canvas."
+      },
+      {
+        "name": "selection-halo",
+        "value": "0 0 0 2px #dce6ef",
+        "purpose": "Selected vessel label."
+      },
+      {
+        "name": "drawer",
+        "value": "8px 0 32px rgba(20, 23, 28, 0.18)",
+        "purpose": "Table 1 slide-over drawer below 1280px."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "All state transitions."
+      },
+      {
+        "name": "state",
+        "value": "160ms",
+        "purpose": "Colour and border changes on buttons, inputs, tabs, rows."
+      },
+      {
+        "name": "caret-and-label",
+        "value": "180ms to 200ms",
+        "purpose": "Disclosure caret rotation, vessel label fade."
+      },
+      {
+        "name": "drawer",
+        "value": "260ms",
+        "purpose": "Table 1 slide-over."
+      },
+      {
+        "name": "marker-slide",
+        "value": "320ms",
+        "purpose": "Dot-plot markers sliding along the shared axis and recolouring."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Disables heartbeat, camera tweens, transitions and loading shimmer."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-compact",
+        "value": "479px",
+        "purpose": "View-control button hides its text label."
+      },
+      {
+        "name": "single-column",
+        "value": "899px",
+        "purpose": "Below: one column, figure then results; Table 1 a drawer."
+      },
+      {
+        "name": "drawer",
+        "value": "1279px",
+        "purpose": "Below: Table 1 becomes a slide-over drawer."
+      },
+      {
+        "name": "three-column",
+        "value": "1280px",
+        "purpose": "Table 1, Figure 1A, results in one 100dvh frame."
+      }
+    ],
+    "riskRamp": {
+      "source": "static/js/heart.js riskScore/riskColor; .legend-bar in static/css/style.css",
+      "anchor": "each model's cut-off maps to risk-mid (score 0.5)",
+      "window": "0.30 probability either side: full risk-low at cut-off minus 0.30, full risk-high at cut-off plus 0.30",
+      "easing": {
+        "lowToMid": "t^2",
+        "midToHigh": "t^0.7"
+      },
+      "legendStops": [
+        "#2f9a68 0%",
+        "#4c9b65 12.5%",
+        "#7e9c5c 25%",
+        "#b09f49 37.5%",
+        "#e0a21a 50%",
+        "#d78621 62.5%",
+        "#d27025 75%",
+        "#cd5728 87.5%",
+        "#c8352b 100%"
+      ]
+    },
+    "brandAssets": {
+      "logo": "static/logo.svg: faceted heart, ink left half and journal-blue right half with lighter/darker facets, paper seams, risk-high marker with paper ring",
+      "favicon": "static/favicon.svg: same faceted mark on a rounded paper tile"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action, such as Edit patient in the masthead.",
+      "html": "<button class=\"ds-btn\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 256 256\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M40,88H73a32,32,0,0,0,62,0h81a8,8,0,0,0,0-16H135a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16Zm64-24A16,16,0,1,1,88,80,16,16,0,0,1,104,64ZM216,168H199a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16h97a32,32,0,0,0,62,0h17a8,8,0,0,0,0-16Zm-48,24a16,16,0,1,1,16-16A16,16,0,0,1,168,192Z\"/></svg>Edit patient</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid var(--accent, #1d4f80); border-radius: 4px; background: var(--accent, #1d4f80); color: #fff; font: 600 0.8125rem 'Public Sans', system-ui, sans-serif; cursor: pointer; transition: background-color 160ms cubic-bezier(0.22, 1, 0.36, 1), transform 120ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn:hover { background: #163f67; } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: 2px solid var(--accent, #1d4f80); outline-offset: 2px; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Secondary action inside the figure, such as Reset view.",
+      "html": "<button class=\"ds-btn-quiet\">Reset view</button>",
+      "css": ".ds-btn-quiet { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid var(--rule, #c9cdc6); border-radius: 4px; background: transparent; color: var(--accent, #1d4f80); font: 600 0.8125rem 'Public Sans', system-ui, sans-serif; cursor: pointer; transition: background-color 160ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-quiet:hover { background: var(--accent-soft, #dce6ef); border-color: var(--accent, #1d4f80); } .ds-btn-quiet:focus-visible { outline: 2px solid var(--accent, #1d4f80); outline-offset: 2px; }"
+    },
+    {
+      "name": "Number Field",
+      "kind": "input",
+      "refersTo": "input-number",
+      "description": "Table 1 editable cell; right-aligned tabular numbers.",
+      "html": "<label class=\"ds-field\"><span>Age<small>years</small></span><input class=\"ds-input\" type=\"number\" value=\"53\"></label>",
+      "css": ".ds-field { display: grid; grid-template-columns: minmax(0, 1fr) 7.25rem; align-items: center; gap: 10px; font: 400 0.8125rem/1.3 'Public Sans', system-ui, sans-serif; color: var(--ink, #14171c); } .ds-field small { display: block; color: var(--ink-3, #5f6670); font-size: 0.75rem; } .ds-input { width: 100%; min-height: 34px; padding: 5px 9px; background: #fff; border: 1px solid var(--rule, #c9cdc6); border-radius: 4px; font: inherit; font-size: 0.9375rem; text-align: right; font-variant-numeric: tabular-nums; transition: border-color 160ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-input:hover { border-color: #9fa59c; } .ds-input:focus-visible { outline: 2px solid var(--accent, #1d4f80); outline-offset: 2px; }"
+    },
+    {
+      "name": "Tabs",
+      "kind": "nav",
+      "refersTo": "tabs",
+      "description": "Panel C target switcher: text tabs on a rule.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button role=\"tab\" aria-selected=\"true\">CAD</button><button role=\"tab\" aria-selected=\"false\">LAD</button><button role=\"tab\" aria-selected=\"false\">LCX</button><button role=\"tab\" aria-selected=\"false\">RCA</button></div>",
+      "css": ".ds-tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--rule, #c9cdc6); } .ds-tabs button { min-height: 32px; padding: 0 2px; margin-bottom: -1px; border: none; border-bottom: 2px solid transparent; background: none; font: 600 0.8125rem 'Public Sans', system-ui, sans-serif; color: var(--ink-3, #5f6670); cursor: pointer; transition: color 160ms cubic-bezier(0.22, 1, 0.36, 1), border-color 160ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-tabs button:hover { color: var(--ink, #14171c); border-bottom-color: var(--rule, #c9cdc6); } .ds-tabs button[aria-selected=\"true\"] { color: var(--accent, #1d4f80); border-bottom-color: var(--accent, #1d4f80); } .ds-tabs button:focus-visible { outline: 2px solid var(--accent, #1d4f80); outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Tag",
+      "kind": "chip",
+      "refersTo": "status-high",
+      "description": "Above or below the model cut-off beside the CAD headline.",
+      "html": "<span class=\"ds-status ds-high\">Above cut-off</span> <span class=\"ds-status ds-low\">Below cut-off</span>",
+      "css": ".ds-status { display: inline-block; padding: 2px 7px; border-radius: 2px; font: 700 0.75rem 'Public Sans', system-ui, sans-serif; letter-spacing: 0.02em; } .ds-high { background: #f6e2df; color: #a32b22; } .ds-low { background: #dfeee5; color: #22704b; }"
+    },
+    {
+      "name": "Shared-axis Dot Plot Row",
+      "kind": "custom",
+      "refersTo": "dot-plot-row-selected",
+      "description": "Panel B row: probability marker on one shared axis with the model cut-off tick.",
+      "html": "<button class=\"ds-dp\" aria-pressed=\"true\"><span class=\"ds-dp-name\"><b>LAD</b><small>AUC 0.86</small></span><span class=\"ds-dp-track\"><span class=\"ds-dp-cut\" style=\"left:62%\"></span><i style=\"left:74%;background:#d0612a\"></i></span><span class=\"ds-dp-val\">74%</span></button>",
+      "css": ".ds-dp { display: grid; grid-template-columns: 4.75rem minmax(0, 1fr) 3.25rem; align-items: center; gap: 12px; width: 100%; padding: 6px; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 4px; font-family: 'Public Sans', system-ui, sans-serif; color: var(--ink, #14171c); cursor: pointer; transition: background-color 160ms cubic-bezier(0.22, 1, 0.36, 1), border-color 160ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-dp:hover { background: var(--rule-soft, #dde0da); } .ds-dp[aria-pressed=\"true\"] { background: var(--accent-soft, #dce6ef); border-color: var(--accent, #1d4f80); } .ds-dp:focus-visible { outline: 2px solid var(--accent, #1d4f80); outline-offset: 2px; } .ds-dp-name { display: flex; flex-direction: column; line-height: 1.2; } .ds-dp-name b { font-weight: 750; } .ds-dp-name small { color: var(--ink-3, #5f6670); font-size: 0.75rem; } .ds-dp-track { position: relative; height: 22px; } .ds-dp-track::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #9ea49b; } .ds-dp-cut { position: absolute; top: 3px; bottom: 3px; width: 2px; margin-left: -1px; background: var(--ink, #14171c); } .ds-dp-track i { position: absolute; top: 50%; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%; box-shadow: 0 0 0 1.5px var(--ink, #14171c); transition: left 320ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-dp-val { text-align: right; font-size: 1.125rem; font-weight: 750; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Booktabs Table",
+      "kind": "custom",
+      "refersTo": "booktabs",
+      "description": "Table 2 validation: heavy ink top and bottom, hairline under the header, no vertical rules.",
+      "html": "<table class=\"ds-booktabs\"><thead><tr><th>Target</th><th>AUC</th><th>Sens.</th></tr></thead><tbody><tr><td>CAD</td><td>0.932 <span class=\"ds-ci\">0.90 to 0.96</span></td><td>0.91</td></tr><tr><td>LAD</td><td>0.857</td><td>0.80</td></tr></tbody></table>",
+      "css": ".ds-booktabs { width: 100%; border-collapse: collapse; font: 400 0.8125rem 'Public Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; color: var(--ink, #14171c); border-top: 2px solid var(--ink, #14171c); border-bottom: 2px solid var(--ink, #14171c); } .ds-booktabs th { font-weight: 600; color: var(--ink-2, #444a54); border-bottom: 1px solid var(--ink, #14171c); } .ds-booktabs th, .ds-booktabs td { padding: 5px 6px; text-align: right; } .ds-booktabs th:first-child, .ds-booktabs td:first-child { text-align: left; padding-left: 0; } .ds-ci { color: var(--ink-3, #5f6670); font-size: 0.75rem; }"
+    },
+    {
+      "name": "Vessel Label",
+      "kind": "custom",
+      "refersTo": "vessel-label",
+      "description": "Leader-line label on the heart: risk swatch, artery name, probability.",
+      "html": "<button class=\"ds-vlabel\"><span class=\"ds-sw\" style=\"background:#d0612a\"></span><b>LAD</b><span class=\"ds-pct\">74%</span></button>",
+      "css": ".ds-vlabel { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 7px; border: 1px solid var(--rule, #c9cdc6); border-radius: 4px; background: rgba(249, 250, 248, 0.94); font: 400 0.8125rem 'Public Sans', system-ui, sans-serif; color: var(--ink, #14171c); box-shadow: 0 1px 3px rgba(20, 23, 28, 0.12); cursor: pointer; transition: border-color 160ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-vlabel:hover { border-color: var(--accent, #1d4f80); } .ds-vlabel:focus-visible { outline: 2px solid var(--accent, #1d4f80); outline-offset: 2px; } .ds-vlabel b { font-weight: 750; } .ds-sw { width: 10px; height: 10px; outline: 1px solid rgba(20, 23, 28, 0.55); } .ds-pct { color: var(--ink-2, #444a54); font-variant-numeric: tabular-nums; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Live Journal Figure",
+    "overview": "Each patient is laid out as a figure from a cardiology journal: Table 1 holds the editable patient characteristics, Figure 1A is the heart, panel B is a forest-style dot plot of CAD and artery probabilities on one shared axis, panel C is the SHAP forest plot, and Table 2 reports validation. The page reads like printed stock: cool uncoated paper, near-black ink, two grey inks, and booktabs rules. Hierarchy comes from type weight and rules, never from boxes.\n\nColour is reserved for data. The one interaction accent, journal blue, marks selection, focus and actions; everything else that is coloured is a measured probability on the green, ochre, red risk ramp or the realistic tissue of the heart. Values change in place inside fixed cells, so editing a patient makes markers slide along the axis rather than re-laying out the page. Density is high and deliberate: on a desktop the whole figure fits in one viewport.\n\nThe system explicitly rejects the dark navy, cyan-accent card dashboard, and the gamified or sci-fi medical look.",
+    "keyCharacteristics": [
+      "Paper and figure ground, ink and rules; no cards, no panels with backgrounds.",
+      "One interaction accent (journal blue); colour otherwise means risk.",
+      "One family, Public Sans, with tabular figures everywhere.",
+      "Booktabs tables: heavy ink top and bottom, hairline middle.",
+      "Controls slightly rounded (4px); everything else square.",
+      "Realistic heart whose risk-coloured coronaries read first."
+    ],
+    "rules": [
+      {
+        "name": "The Only Data Carries Colour Rule",
+        "body": "Layout, chrome and type stay in paper, ink and rules. Green, ochre and red appear only when they encode a predicted probability or its direction.",
+        "section": "colors"
+      },
+      {
+        "name": "The Shared Ramp Rule",
+        "body": "The risk ramp has one definition used by both the page and the 3D heart: anchored at each model's cut-off, saturating 30 points either side, with the same easing. Change the stops, window or easing in the renderer and the legend gradient together, or not at all.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Accent Rule",
+        "body": "Journal blue is the only interaction colour. It never encodes risk, and risk colours never mark selection.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Figures Rule",
+        "body": "Every number is set in tabular figures so values changing in place never shift their neighbours.",
+        "section": "typography"
+      },
+      {
+        "name": "The Label Inside the Heading Rule",
+        "body": "Panel letters and table numbers are part of the heading line. No separate small label above a heading.",
+        "section": "typography"
+      },
+      {
+        "name": "The Rules Not Boxes Rule",
+        "body": "Panels are separated by 1px rules and the frame by 2px ink rules. No card backgrounds, no bordered containers, no decorative shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do separate regions with rules: 1px Rule between columns and panels, 2px Ink for the masthead, footer and booktabs frame.",
+      "Do keep journal blue (#1d4f80) as the single interaction colour for selection, focus and actions.",
+      "Do colour data only through the shared risk ramp, anchored at each model's cut-off and saturating 30 points either side, and keep the CSS legend stops and heart renderer values identical.",
+      "Do set every number in tabular figures and update values in place.",
+      "Do put panel letters and table numbers inside the heading line (\"Table 1 Patient characteristics\", \"B Probability of 50% or more narrowing\").",
+      "Do write visible copy in sentence case, plain and specific, without em or en dashes.",
+      "Do keep the educational-prototype disclaimer visible in the warning strip directly under the masthead.",
+      "Do honour reduced motion by stopping the heartbeat, camera tweens and transitions."
+    ],
+    "donts": [
+      "Don't use cards, filled panels or bordered boxes to group content.",
+      "Don't use the dark navy, cyan-accent dashboard look or sci-fi glow effects.",
+      "Don't use risk green, ochre or red for chrome, selection or decoration.",
+      "Don't round panels, figures or tables; only controls take the 4px radius.",
+      "Don't add a second typeface or a system display face.",
+      "Don't place small uppercase eyebrow labels above headings.",
+      "Don't use emoji as icons; use the Phosphor regular sprite.",
+      "Don't let the 3D renderer tone-map the coronary materials, or the heart and the labels will disagree on colour."
+    ]
+  }
+}

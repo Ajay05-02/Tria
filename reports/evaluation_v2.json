@@ -1,0 +1,191 @@
+{
+  "protocol": "Stratified 5-fold CV repeated 10 times (seeds 0-9); forest, Platt calibrator, threshold and vessel models fitted inside training folds only; DeLong 95% CIs averaged over repeats.",
+  "v1_original_features_uncalibrated": {
+    "Cath": {
+      "auc": 0.9217752234993615,
+      "auc_ci_low": 0.8883868268462253,
+      "auc_ci_high": 0.9551636201524977,
+      "brier": 0.11393661418984809,
+      "calibration_intercept": 0.014089547507773104,
+      "calibration_slope": 2.242050601191893,
+      "scaled_brier": 0.4433585242573562,
+      "auc_repeat_sd": 0.004291316549520568
+    },
+    "LAD": {
+      "auc": 0.8491570262756702,
+      "auc_ci_low": 0.805017468538391,
+      "auc_ci_high": 0.8932965840129496,
+      "brier": 0.16424595876591241,
+      "calibration_intercept": 0.016728801243315626,
+      "calibration_slope": 1.883753155745234,
+      "scaled_brier": 0.3238607645798739,
+      "auc_repeat_sd": 0.006954978421676006
+    },
+    "LCX": {
+      "auc": 0.7460129704055534,
+      "auc_ci_low": 0.6905234403091925,
+      "auc_ci_high": 0.8015025005019144,
+      "brier": 0.20341333437862094,
+      "calibration_intercept": 0.008150884752364848,
+      "calibration_slope": 1.6710366683539786,
+      "scaled_brier": 0.14709651004901303,
+      "auc_repeat_sd": 0.007724978090195731
+    },
+    "RCA": {
+      "auc": 0.7068551007147499,
+      "auc_ci_low": 0.6474575331206539,
+      "auc_ci_high": 0.7662526683088456,
+      "brier": 0.2069042883470821,
+      "calibration_intercept": -0.006805289026504541,
+      "calibration_slope": 1.2965876449382712,
+      "scaled_brier": 0.1183664806062722,
+      "auc_repeat_sd": 0.012892179099317138
+    }
+  },
+  "v2_features_uncalibrated": {
+    "Cath": {
+      "auc": 0.9337377607492551,
+      "auc_ci_low": 0.9028328135397088,
+      "auc_ci_high": 0.9646427079588014,
+      "brier": 0.09811472591903622,
+      "calibration_intercept": 0.020799932665123286,
+      "calibration_slope": 1.9293789324967026,
+      "scaled_brier": 0.5206569352968925,
+      "auc_repeat_sd": 0.004501349565409226
+    },
+    "LAD": {
+      "auc": 0.865796789525603,
+      "auc_ci_low": 0.8242849198743455,
+      "auc_ci_high": 0.9073086591768608,
+      "brier": 0.1480591257702456,
+      "calibration_intercept": 0.015563779462460806,
+      "calibration_slope": 1.6158652035591623,
+      "scaled_brier": 0.3904959071903651,
+      "auc_repeat_sd": 0.006227267697630649
+    },
+    "LCX": {
+      "auc": 0.7620387285348922,
+      "auc_ci_low": 0.7081903522915385,
+      "auc_ci_high": 0.8158871047782459,
+      "brier": 0.1950381895874274,
+      "calibration_intercept": 0.004154585432502389,
+      "calibration_slope": 1.4374174253698047,
+      "scaled_brier": 0.18221313720167498,
+      "auc_repeat_sd": 0.007856197535742706
+    },
+    "RCA": {
+      "auc": 0.7250719391070268,
+      "auc_ci_low": 0.6678077173793294,
+      "auc_ci_high": 0.7823361608347241,
+      "brier": 0.20145814986579708,
+      "calibration_intercept": -0.006804263992690815,
+      "calibration_slope": 1.1861717027977157,
+      "scaled_brier": 0.14157285431036093,
+      "auc_repeat_sd": 0.008316104770632911
+    }
+  },
+  "v2_calibrated_with_threshold": {
+    "Cath": {
+      "auc": 0.9321892294593445,
+      "auc_ci_low": 0.9003528707398992,
+      "auc_ci_high": 0.9640255881787896,
+      "brier": 0.08635065844894758,
+      "calibration_intercept": -0.00964667879044314,
+      "calibration_slope": 0.9487304384474766,
+      "sensitivity": 0.9087962962962963,
+      "specificity": 0.8080459770114944,
+      "ppv": 0.9216294596295581,
+      "npv": 0.7812533990680086,
+      "accuracy": 0.8798679867986798,
+      "f1": 0.9151486587384792,
+      "scaled_brier": 0.5781307151160373,
+      "auc_repeat_sd": 0.00489414122268112,
+      "mean_threshold": 0.6219614640168877
+    },
+    "LAD": {
+      "auc": 0.8647027172450901,
+      "auc_ci_low": 0.8228985715210037,
+      "auc_ci_high": 0.9065068629691766,
+      "brier": 0.1419330526472204,
+      "calibration_intercept": -0.023884659360324086,
+      "calibration_slope": 0.9483180106558132,
+      "sensitivity": 0.859322033898305,
+      "specificity": 0.7238095238095238,
+      "ppv": 0.8142611853152204,
+      "npv": 0.7870567362239347,
+      "accuracy": 0.802970297029703,
+      "f1": 0.8358121808218766,
+      "scaled_brier": 0.4157146609950383,
+      "auc_repeat_sd": 0.006525371211510886,
+      "mean_threshold": 0.52622999024544
+    },
+    "LCX": {
+      "auc": 0.7610613810741689,
+      "auc_ci_low": 0.7070555729197638,
+      "auc_ci_high": 0.8150671892285738,
+      "brier": 0.19275805709911142,
+      "calibration_intercept": -0.003161517132998093,
+      "calibration_slope": 1.027859544565887,
+      "sensitivity": 0.7411764705882353,
+      "specificity": 0.6391304347826087,
+      "ppv": 0.5706615446183838,
+      "npv": 0.7930334115347039,
+      "accuracy": 0.6792079207920791,
+      "f1": 0.6445460758476345,
+      "scaled_brier": 0.19177363608822062,
+      "auc_repeat_sd": 0.009436220692675246,
+      "mean_threshold": 0.3819673799682277
+    },
+    "RCA": {
+      "auc": 0.7233825304000744,
+      "auc_ci_low": 0.6658273173649578,
+      "auc_ci_high": 0.7809377434351908,
+      "brier": 0.20221530171435007,
+      "calibration_intercept": -0.004360119503059239,
+      "calibration_slope": 0.9342637526186145,
+      "sensitivity": 0.6921052631578947,
+      "specificity": 0.6031746031746031,
+      "ppv": 0.5139458891697564,
+      "npv": 0.7649846337100145,
+      "accuracy": 0.6366336633663365,
+      "f1": 0.5890313458927334,
+      "scaled_brier": 0.13834657778275483,
+      "auc_repeat_sd": 0.007693030476269108,
+      "mean_threshold": 0.3697288728769059
+    }
+  },
+  "v2_two_step_vessels (deployed)": {
+    "LAD": {
+      "auc": 0.8574970854631871,
+      "auc_ci_low": 0.8138159152016516,
+      "auc_ci_high": 0.9011782557247228,
+      "brier": 0.1432149554694942,
+      "calibration_intercept": 0.03141611246167382,
+      "calibration_slope": 1.1477479818752465,
+      "scaled_brier": 0.4104375461080265,
+      "auc_repeat_sd": 0.005693230635293677
+    },
+    "LCX": {
+      "auc": 0.7499223602484472,
+      "auc_ci_low": 0.6956427646686173,
+      "auc_ci_high": 0.8042019558282771,
+      "brier": 0.195430316955754,
+      "calibration_intercept": -9.820489825038501e-05,
+      "calibration_slope": 0.9348955307004619,
+      "scaled_brier": 0.18056896376549048,
+      "auc_repeat_sd": 0.009145864942095999
+    },
+    "RCA": {
+      "auc": 0.7239812494198458,
+      "auc_ci_low": 0.6681500168386064,
+      "auc_ci_high": 0.7798124820010854,
+      "brier": 0.19816334742372038,
+      "calibration_intercept": -8.489279191072115e-05,
+      "calibration_slope": 0.9988213981485986,
+      "scaled_brier": 0.15561223597770613,
+      "auc_repeat_sd": 0.014201086826029587
+    }
+  },
+  "coherence_two_step": 0.0,
+  "coherence_independent": 0.19801980198019803
+}
