@@ -22,6 +22,8 @@ const state = {
   prediction: null,
   explainTarget: "Cath",
   showAll: false,
+  example: null,      // the study patient currently loaded, with its held-out predictions
+  edited: false,      // true once any value has been changed by hand
   selectedVessel: null,
   patientLabel: "",
 };
@@ -67,7 +69,7 @@ async function init() {
   buildTabs();
   renderMetrics();
   applyWording();
-  await loadPatient(0);
+  loadMedian();
 }
 
 // ---------------------------------------------------------------- first-visit guide
@@ -94,6 +96,7 @@ function applyWording() {
     if (tab) tab.textContent = nameOf(t);
   }
   if (state.prediction) render();
+  if ($("truth")) renderTruth();
 }
 
 // ---------------------------------------------------------------- print the figure as one page
@@ -168,10 +171,12 @@ function describeLabels(labels) {
 
 function buildPatientSelect() {
   const sel = $("patient-select");
-  sel.add(new Option("Typical patient (median values)", "median"));
+  sel.add(new Option("New patient (blank form)", "median"));
+  const group = Object.assign(document.createElement("optgroup"), { label: "Example patients from the study" });
   for (const p of state.meta.patients) {
-    sel.add(new Option(`Patient #${p.index}: ${describeLabels(p.labels)}`, String(p.index)));
+    group.append(new Option(`Patient #${p.index}: ${describeLabels(p.labels)}`, String(p.index)));
   }
+  sel.append(group);
   sel.addEventListener("change", () => (sel.value === "median" ? loadMedian() : loadPatient(Number(sel.value))));
 }
 
@@ -181,19 +186,23 @@ async function loadPatient(index) {
   const data = await res.json();
   $("patient-select").value = String(index);
   state.inputs = { ...data.inputs };
-  state.patientLabel = `Patient #${index}`;
-  const truth = $("truth");
-  truth.hidden = false;
-  truth.innerHTML = `Angiography: <b>${describeLabels(data.labels)}</b>. Training-set patient, shown as a demonstration.`;
+  state.patientLabel = `Example patient #${index}`;
+  state.example = { labels: data.labels, heldout: data.heldout };
+  state.edited = false;
+  renderTruth();
   writeForm();
   predictNow();
 }
 
 function loadMedian() {
   state.inputs = {};
-  for (const f of state.meta.fields) state.inputs[f.key] = f.median;
-  state.patientLabel = "Typical patient (median values)";
-  $("truth").hidden = true;
+  // A blank form: typical (median) measurements, every symptom and finding absent until entered
+  for (const f of state.meta.fields) state.inputs[f.key] = f.kind === "binary" ? 0 : f.median;
+  $("patient-select").value = "median";
+  state.patientLabel = "New patient";
+  state.example = null;
+  state.edited = false;
+  renderTruth();
   writeForm();
   predictNow();
 }
@@ -323,7 +332,31 @@ function writeForm() {
 }
 
 // ---------------------------------------------------------------- prediction
+// Under the patient selector: how to start, or the truth and the honest held-out prediction for an example
+function renderTruth() {
+  const truth = $("truth");
+  truth.hidden = false;
+  if (!state.example) {
+    truth.innerHTML = "Starts with typical measurements and no symptoms or findings. Enter your patient's values below, or choose an example patient from the study.";
+    return;
+  }
+  const { labels, heldout } = state.example;
+  let html = `Angiography result: <b>${describeLabels(labels)}</b>.`;
+  if (state.edited) {
+    html += ` <span class="muted">Values edited, so this is now a new patient.</span>`;
+  } else if (heldout) {
+    const list = TARGETS.map((t) => `${nameOf(t)} ${pct(heldout[t])}`).join(", ");
+    html += `<br>Held-out prediction, from a model that never saw this patient: <b>${list}</b>.`
+      + ` <span class="muted">The live numbers come from the final model, which learned from all 303 patients.</span>`;
+  }
+  truth.innerHTML = html;
+}
+
 function schedulePredict() {
+  if (state.example && !state.edited) {
+    state.edited = true;
+    renderTruth();
+  }
   clearTimeout(predictTimer);
   predictTimer = setTimeout(predictNow, 180);
 }

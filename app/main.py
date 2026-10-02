@@ -34,6 +34,8 @@ explainers = {t: shap.TreeExplainer(m) for t, m in rf.items()}
 PATIENTS_X = pd.read_csv(ROOT / "data" / "processed" / "X_features.csv")
 PATIENTS_Y = pd.read_csv(ROOT / "data" / "processed" / "y_targets.csv")
 PATIENTS_X["Weight"] = PATIENTS_X["Weight"].round(0)
+HELDOUT_FILE = MODELS / "heldout_predictions.json"   # cross-validated predictions, written by train.py
+HELDOUT = json.loads(HELDOUT_FILE.read_text()) if HELDOUT_FILE.exists() else None
 
 FEATURE_LABELS = {**{k: v["label"] for k, v in FEATURES.items()}, **ENGINEERED_LABELS}
 UNITS = {k: v.get("unit", "") for k, v in FEATURES.items()}
@@ -123,7 +125,8 @@ def get_patient(index: int):
         raise HTTPException(status_code=404, detail=f"patient index must be 0-{len(PATIENTS_X) - 1}")
     return {"index": index,
             "inputs": {k: float(v) for k, v in PATIENTS_X.loc[index].items()},
-            "labels": {t: int(PATIENTS_Y.loc[index, t]) for t in PATIENTS_Y.columns}}
+            "labels": {t: int(PATIENTS_Y.loc[index, t]) for t in PATIENTS_Y.columns},
+            "heldout": HELDOUT[index] if HELDOUT else None}
 
 
 @app.post("/api/predict")

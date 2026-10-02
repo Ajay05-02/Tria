@@ -271,7 +271,8 @@ A realistic heart on the figure ground: deep maroon myocardium with a restrained
 - **Plain words:** a masthead checkbox that swaps clinical names for everyday ones everywhere at once (LAD "Front artery", LCX "Side artery", RCA "Right artery", CAD "Any heart artery"), including the 3D labels, panel B, panel C tabs, headline and status. Remembered per browser.
 - **Factor rows are links into Table 1:** clicking a panel C row opens the input it comes from (engineered features jump to their source input), scrolls to it, focuses it and flashes the row in Journal Blue Soft.
 - **Print:** a quiet button prints the patient as an A4 landscape figure: masthead, disclaimer, Figure 1A as one image with its artery labels drawn in, panels B and C, Table 2. Controls, drawer and guide are hidden.
-- **Header links:** Method (README validation section) and Code (GitHub) sit in Journal Blue at the right of the masthead.
+- **Header link:** Method (the README's validation section) sits in Journal Blue at the right of the masthead.
+- **New patient first:** the page opens on a new patient with typical starting values. The 303 study patients are a separate "Example patients from the study" group; for those, the line under the selector shows the angiography result and the held-out (cross-validated) prediction, until any value is edited.
 
 ### Motion
 State transitions only: 160ms for colour and border changes, 180 to 200ms for carets and label fades, 260ms for the drawer, 320ms for markers sliding along the axis, all on a strong ease-out (cubic-bezier(0.22, 1, 0.36, 1)). The heart beats at the patient's pulse and the camera tweens to a selected artery. Reduced motion turns off the heartbeat, camera tweens, all transitions and the loading shimmer.

@@ -32,6 +32,8 @@ Built for the **Multimodal AI Hackathon 2026, Track A: Cardiovascular Risk Visua
 - **Reads like a journal figure:** the heart is Figure 1A, panel B plots CAD and the three arteries on one shared 0 to 100% axis with each model's cut-off marked, panel C is the SHAP forest plot, Table 1 holds the editable patient values and Table 2 the validation results. Works on desktop, tablet (patient table in a slide-over drawer) and phone.
 - **Explains** every prediction with **SHAP** values: which measurements pushed the risk up or down, and by how much. It also shows the "points" behind the published CAD Consortium risk score.
 - **Updates in real time** as you edit any value, and warns when an input is outside the range seen in training.
+- **Starts as a blank form** (typical measurements, no symptoms or findings) for entering a new patient. The 303 study patients are available as examples; for each one the app also shows the **held-out prediction** from a model that never saw that patient, because the final model learned from all of them and is optimistic on them.
+- **Plain words** switch for patients and non-cardiologists, a first-visit guide, click-a-factor-to-edit, and a one-page **Print** of the figure.
 
 ## Results (honest, leakage-free validation)
 
@@ -133,7 +135,7 @@ docker run -p 7860:7860 flowstate
 | Method | Path | Returns |
 |---|---|---|
 | GET | `/api/meta` | Form layout, thresholds, validation metrics |
-| GET | `/api/patients/{index}` | Inputs and true labels of a dataset patient (for demos) |
+| GET | `/api/patients/{index}` | Inputs, true labels and held-out (cross-validated) predictions of a study patient, for demos |
 | POST | `/api/predict` | `{"inputs": {...}}` → probabilities, SHAP explanations, CAD Consortium breakdown, warnings |
 
 ## Project structure

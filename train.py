@@ -51,6 +51,10 @@ def main():
     joblib.dump(make_rf().fit(Xf, y_cath), MODELS / "rf_Cath.joblib")
     joblib.dump(platt_cath, MODELS / "platt_Cath.joblib")
 
+    # Held-out ("never seen") predictions for the example patients shown in the app:
+    # each patient is scored by a forest trained on the other 4/5 of the patients
+    heldout = {"Cath": p_cad_oof}
+
     # Vessels, trained on CAD patients only
     cad_idx = np.where(y_cath == 1)[0]
     for v in VESSELS:
@@ -60,12 +64,15 @@ def main():
             tr_cad = tr[y_cath[tr] == 1]
             cond_oof_raw[te] = make_rf().fit(Xf.iloc[tr_cad], yv[tr_cad]).predict_proba(Xf.iloc[te])[:, 1]
         platt_v = fit_platt(cond_oof_raw[cad_idx], yv[cad_idx])
-        thresholds[v] = pick_threshold(v, yv, p_cad_oof * apply_platt(platt_v, cond_oof_raw))
+        heldout[v] = p_cad_oof * apply_platt(platt_v, cond_oof_raw)
+        thresholds[v] = pick_threshold(v, yv, heldout[v])
         joblib.dump(make_rf().fit(Xf.iloc[cad_idx], yv[cad_idx]), MODELS / f"rf_cond_{v}.joblib")
         joblib.dump(platt_v, MODELS / f"platt_cond_{v}.joblib")
 
     for t, thr in thresholds.items():
         print(f"  {t}: threshold {thr:.3f}")
+    (MODELS / "heldout_predictions.json").write_text(json.dumps(
+        [{t: round(float(heldout[t][i]), 4) for t in heldout} for i in range(n)]))
 
     # Everything the web form needs about each of the 55 raw inputs
     input_info = {}
