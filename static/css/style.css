@@ -77,6 +77,20 @@ button { cursor: pointer; }
 .brand { gap: 10px; }
 .brand h1 { font-size: var(--t-xl); font-weight: 780; letter-spacing: -0.025em; line-height: 1; }
 .brand h1 span { color: var(--accent); }
+.mast-links { display: flex; align-items: center; gap: 18px; font-size: var(--t-sm); }
+.mast-links a { color: var(--accent); font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+.mast-links a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* first-visit guide: one quiet strip, dismissed for good */
+.guide {
+  position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 6px 28px;
+  padding: 10px 56px 10px 24px; border-bottom: 1px solid var(--rule); background: var(--figure); font-size: var(--t-sm);
+}
+.guide-lead { font-weight: 650; max-width: 34ch; }
+.guide ol { display: flex; flex-wrap: wrap; gap: 6px 26px; margin: 0; padding-left: 18px; color: var(--ink-2); }
+.guide li::marker { font-weight: 800; color: var(--ink); }
+.guide b { color: var(--ink); font-weight: 650; }
+.guide .icon-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
 
 .disclaimer {
   display: flex; align-items: flex-start; gap: 8px;
@@ -210,7 +224,7 @@ h2 { font-size: var(--t-md); font-weight: 700; letter-spacing: -0.005em; }
   display: grid; grid-template-columns: auto 1fr; align-items: end; gap: 6px 24px;
   padding: 10px 20px 14px; border-top: 1px solid var(--rule-soft);
 }
-.legend { width: 15rem; }
+.legend { width: 11.5rem; }
 .legend-bar {
   position: relative; height: 8px; outline: 1px solid rgba(20, 23, 28, 0.2);
   /* same eased ramp as riskColor() in heart.js: green holds below the cut-off, red arrives quickly above it */
@@ -218,7 +232,8 @@ h2 { font-size: var(--t-md); font-weight: 700; letter-spacing: -0.005em; }
 }
 .legend-cut { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--ink); }
 .legend-text { display: flex; justify-content: space-between; color: var(--ink-3); font-size: var(--t-xs); margin-top: 4px; }
-.view-controls { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 18px; }
+.view-controls { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 14px; }
+.view-controls .btn + .btn { margin-left: -6px; }
 
 /* ---------- results column */
 .results { min-height: 0; overflow: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 16px 20px 0; border-left: 1px solid var(--rule); }
@@ -312,7 +327,13 @@ h2 { font-size: var(--t-md); font-weight: 700; letter-spacing: -0.005em; }
 .bar-row {
   display: grid; grid-template-columns: minmax(0, 1fr) 7rem 3rem; gap: 8px; align-items: center;
   min-height: 26px; font-size: var(--t-sm);
+  width: 100%; padding: 0 4px; margin: 0 -4px; box-sizing: content-box; border: none; border-radius: var(--r-control);
+  background: none; text-align: left; transition: background-color 160ms var(--ease-out);
 }
+.bar-row:hover { background: var(--rule-soft); }
+.field.flash { animation: flash 1.4s var(--ease-out); }
+@keyframes flash { 0%, 30% { background: var(--accent-soft); box-shadow: 0 0 0 6px var(--accent-soft); } 100% { background: transparent; box-shadow: 0 0 0 6px transparent; } }
+.print-shot { display: none; }
 .bar-row .lbl { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; padding: 3px 0; }
 .bar-row .lbl b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bar-row .lbl small { color: var(--ink-3); font-size: var(--t-xs); white-space: nowrap; }
@@ -392,6 +413,40 @@ h2 { font-size: var(--t-md); font-weight: 700; letter-spacing: -0.005em; }
   .view-controls .btn-label { display: none; }
   .view-controls .btn { padding: 0 10px; }
 }
+@media (max-width: 1100px) {
+  .mast-links a:not(.mast-icon) { display: none; }
+  .guide { grid-template-columns: 1fr; }
+}
+@media (max-width: 599px) {
+  .masthead { flex-wrap: wrap; row-gap: 6px; }
+  .mast-links { order: 3; width: 100%; }
+}
+@media (max-width: 899px) {
+  .mast-links { gap: 12px; }
+  .mast-links .mast-icon { display: none; }
+  .guide { padding: 10px 52px 10px 16px; }
+  .guide ol { flex-direction: column; }
+}
+
+/* print: the patient as one landscape journal figure */
+@page { size: A4 landscape; margin: 10mm; }
+@media print {
+  body { background: #fff; }
+  .app { height: auto; min-height: 0; }
+  .skip-link, .guide, .mast-links, .drawer-toggle, .patient, .scrim, .view-controls, .link-btn, .tabs, #cadc,
+  .headline-title .link-btn, .table2 summary h2::after { display: none !important; }
+  .masthead { padding: 0 0 6px; }
+  .disclaimer { padding: 4px 0; background: none; border-bottom: 1px solid var(--ink); }
+  .layout { display: grid; grid-template-columns: 1.15fr 1fr; height: auto; }
+  .figure { background: #fff; }
+  .heart-canvas { min-height: 120mm; }
+  .heart-canvas canvas, .label-layer, .plate-letter { display: none !important; }
+  .print-shot { display: block; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  .results { overflow: visible; border-left: 1px solid var(--rule); padding-bottom: 0; }
+  .panel, .headline, .table2 { break-inside: avoid; }
+  .footer { border-top: 1px solid var(--ink); }
+}
+
 @media (pointer: coarse) {
   .btn, .icon-btn, select, input[type="number"], .tabs button { min-height: 44px; }
   .icon-btn { width: 44px; }

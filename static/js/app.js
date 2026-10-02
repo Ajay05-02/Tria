@@ -7,7 +7,16 @@ const TARGETS = ["Cath", "LAD", "LCX", "RCA"];
 const VESSELS = ["LAD", "LCX", "RCA"];
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+// Plain-words mode: everyday names for patients and non-cardiologists
+const PLAIN = { Cath: "Any heart artery", LAD: "Front artery", LCX: "Side artery", RCA: "Right artery" };
+const TECH = { Cath: "CAD", LAD: "LAD", LCX: "LCX", RCA: "RCA" };
+const store = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode: keep defaults */ } },
+};
+
 const state = {
+  plain: store.get("flowstate-plain") === "1",
   meta: null,
   inputs: {},
   prediction: null,
@@ -23,7 +32,12 @@ const dotRows = {};
 
 // ---------------------------------------------------------------- startup
 async function init() {
+  setupGuide();
+  const slow = setTimeout(() => {
+    $("caption-text").textContent = "Waking up the model. On the free server the first load can take up to a minute.";
+  }, 2500);
   const res = await fetch("api/meta");
+  clearTimeout(slow);
   if (!res.ok) throw new Error(`api/meta returned ${res.status}`);
   state.meta = await res.json();
 
@@ -34,6 +48,13 @@ async function init() {
   $("opt-territory").addEventListener("change", (e) => viewer.setTerritories(e.target.checked));
   $("opt-beat").addEventListener("change", (e) => viewer.setBeating(e.target.checked));
   $("btn-reset").addEventListener("click", () => viewer.resetView());
+  $("btn-print").addEventListener("click", printFigure);
+  $("opt-plain").checked = state.plain;
+  $("opt-plain").addEventListener("change", (e) => {
+    state.plain = e.target.checked;
+    store.set("flowstate-plain", state.plain ? "1" : "0");
+    applyWording();
+  });
   $("btn-all-factors").addEventListener("click", () => {
     state.showAll = !state.showAll;
     renderExplanation();
@@ -45,7 +66,79 @@ async function init() {
   buildDotplot();
   buildTabs();
   renderMetrics();
+  applyWording();
   await loadPatient(0);
+}
+
+// ---------------------------------------------------------------- first-visit guide
+function setupGuide() {
+  const guide = $("guide");
+  guide.hidden = store.get("flowstate-guide") === "hidden";
+  $("btn-guide-close").addEventListener("click", () => {
+    guide.hidden = true;
+    store.set("flowstate-guide", "hidden");
+  });
+}
+
+// ---------------------------------------------------------------- plain words
+const nameOf = (t) => (state.plain ? PLAIN : TECH)[t];
+
+function applyWording() {
+  $("opt-plain").checked = state.plain;
+  $("headline-title").textContent = state.plain ? "Chance of narrowed heart arteries" : "Overall coronary artery disease";
+  $("b-text").textContent = state.plain ? "Chance each artery is at least half blocked" : "Probability of 50% or more narrowing";
+  viewer.setLabelNames(state.plain ? PLAIN : TECH);
+  for (const t of TARGETS) {
+    dotRows[t].querySelector(".dp-name b").textContent = nameOf(t);
+    const tab = $(`tab-${t}`);
+    if (tab) tab.textContent = nameOf(t);
+  }
+  if (state.prediction) render();
+}
+
+// ---------------------------------------------------------------- print the figure as one page
+async function printFigure() {
+  const holder = $("heart-canvas");
+  let img = holder.querySelector(".print-shot");
+  if (!img) {
+    img = Object.assign(document.createElement("img"), { className: "print-shot", alt: "" });
+    holder.append(img);
+  }
+  // One image of the heart with its artery labels drawn in, so they stay aligned at any print size
+  const shot = new Image();
+  shot.src = viewer.snapshot();
+  await shot.decode();
+  const box = holder.getBoundingClientRect();
+  const k = shot.naturalWidth / box.width;
+  const canvas = Object.assign(document.createElement("canvas"), { width: shot.naturalWidth, height: shot.naturalHeight });
+  const g = canvas.getContext("2d");
+  g.drawImage(shot, 0, 0);
+  g.textBaseline = "middle";
+  for (const label of holder.querySelectorAll(".vessel-label")) {
+    const r = label.getBoundingClientRect();
+    if (!r.width) continue;
+    const x = (r.left - box.left) * k, y = (r.top - box.top) * k, w = r.width * k, h = r.height * k;
+    g.fillStyle = "#f9faf8"; g.strokeStyle = "#c9cdc6"; g.lineWidth = k;
+    g.beginPath(); g.roundRect(x, y, w, h, 4 * k); g.fill(); g.stroke();
+    const sw = label.querySelector(".sw");
+    g.fillStyle = sw.style.background || "#c9cdc6";
+    g.fillRect(x + 7 * k, y + h / 2 - 5 * k, 10 * k, 10 * k);
+    g.fillStyle = "#14171c";
+    g.font = `750 ${13 * k}px "Public Sans", sans-serif`;
+    const name = label.querySelector(".nm").textContent;
+    g.fillText(name, x + 23 * k, y + h / 2);
+    const nameWidth = g.measureText(name).width;
+    g.fillStyle = "#444a54";
+    g.font = `400 ${13 * k}px "Public Sans", sans-serif`;
+    g.fillText(label.querySelector(".pct").textContent, x + 23 * k + nameWidth + 6 * k, y + h / 2);
+  }
+  img.src = canvas.toDataURL("image/png");
+  await img.decode();
+  const table2 = document.querySelector("details.table2");
+  const wasOpen = table2.open;
+  table2.open = true;
+  window.addEventListener("afterprint", () => { table2.open = wasOpen; }, { once: true });
+  window.print();
 }
 
 // ---------------------------------------------------------------- Table 1 as a drawer (below 1280px)
@@ -281,9 +374,13 @@ function render() {
 
   $("cad-pct").textContent = pct(cad.probability);
   const status = $("cad-status");
-  status.textContent = cad.high ? "Above cut-off" : "Below cut-off";
+  status.textContent = state.plain
+    ? (cad.high ? "Above the warning line" : "Below the warning line")
+    : (cad.high ? "Above cut-off" : "Below cut-off");
   status.className = `status ${cad.high ? "high" : "low"}`;
-  $("cad-text").textContent = `Rule-out cut-off ${pct(cad.threshold)}, set to catch 90% of CAD.`;
+  $("cad-text").textContent = state.plain
+    ? `The warning line is ${pct(cad.threshold)}. It is set so that 9 in 10 people with narrowed arteries are flagged.`
+    : `Rule-out cut-off ${pct(cad.threshold)}, set to catch 90% of CAD.`;
 
   updateDotplot();
   renderCaption();
@@ -302,7 +399,9 @@ function renderCaption() {
   const v = state.selectedVessel;
   if (v) {
     const info = state.meta.vessels[v];
-    text += ` ${info.full} (${v}), shaded: ${info.territory.toLowerCase()}.`;
+    text += state.plain
+      ? ` ${PLAIN[v]} (${v}): the shaded muscle is what it feeds, ${info.territory.toLowerCase()}.`
+      : ` ${info.full} (${v}), shaded: ${info.territory.toLowerCase()}.`;
   }
   $("caption-text").textContent = text;
 }
@@ -354,7 +453,7 @@ function updateDotplot() {
     mark.style.setProperty("--x", d.probability);
     mark.style.setProperty("--c", hex(d.probability, d.threshold));
     row.querySelector(".dp-val").textContent = pct(d.probability);
-    const name = t === "Cath" ? "Overall CAD" : t;
+    const name = t === "Cath" ? (state.plain ? PLAIN.Cath : "Overall CAD") : nameOf(t);
     row.setAttribute("aria-label", `${name}: ${pct(d.probability)}, ${d.high ? "above" : "below"} the ${pct(d.threshold)} cut-off`
       + (t === "Cath" ? "" : ". Select to show this artery"));
   }
@@ -432,17 +531,19 @@ function renderExplanation() {
   const maxAbs = Math.max(...ex.contributions.map((c) => Math.abs(c.shap)), 1e-6);
 
   // SHAP explains the forest's raw score; say how it maps to the calibrated figure shown elsewhere
-  $("explain-summary").innerHTML = t === "Cath"
-    ? `The average patient scores <b>${pct(ex.base)}</b> and this patient <b>${pct(ex.score)}</b>, which calibrates to <b>${pct(state.prediction.cad.probability)}</b>.`
-    : `This patient's ${t} score is <b>${pct(ex.score)}</b> (average CAD patient <b>${pct(ex.base)}</b>).`;
+  $("explain-summary").innerHTML = state.plain
+    ? `Bars to the right push the risk up, bars to the left bring it down. Click one to change that value.`
+    : t === "Cath"
+      ? `The average patient scores <b>${pct(ex.base)}</b> and this patient <b>${pct(ex.score)}</b>, which calibrates to <b>${pct(state.prediction.cad.probability)}</b>.`
+      : `This patient's ${t} score is <b>${pct(ex.score)}</b> (average CAD patient <b>${pct(ex.base)}</b>).`;
 
   $("explain-bars").innerHTML = items.map((c) => {
     const w = (Math.abs(c.shap) / maxAbs) * 50;
-    return `<div class="bar-row" title="${c.label}: ${formatValue(c)}">
+    return `<button type="button" class="bar-row" data-feature="${c.feature}" title="${c.label}: ${formatValue(c)}. Click to edit">
       <span class="lbl"><b>${c.label}</b><small>${formatValue(c)}</small></span>
       <span class="bar-track"><span class="bar ${c.shap >= 0 ? "up" : "down"}" style="width:${w}%"></span></span>
       <span class="val num">${c.shap >= 0 ? "+" : "−"}${Math.abs(c.shap * 100).toFixed(1)}</span>
-    </div>`;
+    </button>`;
   }).join("");
   $("btn-all-factors").textContent = state.showAll ? "Show the top 8 factors" : `Show all ${ex.contributions.length} factors`;
 
@@ -458,6 +559,38 @@ function renderExplanation() {
     </table>
     <p class="note">Means ${pct(cadc.published_probability)} in the lower-risk population it was built on; here it is one model input.</p>`;
 }
+
+// Clicking a factor opens its value in Table 1. Engineered features jump to the input they are computed from.
+const SOURCE_INPUT = {
+  CADC_logit: "Age", ECG_isch_count: "St Depression", EF_lt50: "EF-TTE", RWMA_any: "Region RWMA",
+  LV_damage: "EF-TTE", NLR: "Neut", eGFR: "CR", BMI: "Weight",
+};
+function focusInput(feature) {
+  const key = SOURCE_INPUT[feature] ?? feature;
+  let el = document.querySelector(`#patient-form [data-key="${CSS.escape(key)}"]`);
+  if (!el) {
+    const comp = state.meta.composites.find((c) => c.features.includes(feature));
+    if (comp) el = document.querySelector(`[data-composite="${comp.id}"]`);
+  }
+  if (!el) return;
+  if (window.matchMedia("(max-width: 1279px)").matches && !document.body.classList.contains("drawer-open")) {
+    document.querySelector(".js-open-patient").click();
+  }
+  const group = el.closest("details");
+  if (group) group.open = true;
+  el.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+  el.focus({ preventScroll: true });
+  const row = el.closest(".field");
+  if (row) {
+    row.classList.remove("flash");
+    void row.offsetWidth;
+    row.classList.add("flash");
+  }
+}
+document.addEventListener("click", (e) => {
+  const row = e.target.closest(".bar-row[data-feature]");
+  if (row) focusInput(row.dataset.feature);
+});
 
 // ---------------------------------------------------------------- Table 2: validation metrics
 function renderMetrics() {

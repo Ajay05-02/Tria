@@ -377,7 +377,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
       const div = document.createElement("button");
       div.className = "vessel-label";
       div.type = "button";
-      div.innerHTML = `<span class="sw"></span><b>${name}</b><span class="pct"></span>`;
+      div.innerHTML = `<span class="sw"></span><b class="nm">${name}</b><span class="pct"></span>`;
       div.setAttribute("aria-label", `${name}: select this artery`);
       div.addEventListener("click", (e) => { e.stopPropagation(); select(name); onSelect?.(name); });
       const obj = new CSS2DObject(div);
@@ -640,6 +640,12 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
   return {
     setRisks,
     select,
+    // Display names for the artery labels (plain-words mode)
+    setLabelNames: (names) => {
+      for (const [n, { div }] of Object.entries(labels)) div.querySelector(".nm").textContent = names[n] ?? n;
+    },
+    // Still image of the current view, used for printing (WebGL canvases do not print reliably)
+    snapshot: () => { renderer.render(scene, camera); return renderer.domElement.toDataURL("image/png"); },
     setHeartRate: (value) => { bpm = THREE.MathUtils.clamp(value || 70, 30, 180); },
     setBeating: (on) => { beating = on; },
     setTorso: (on) => { torso.visible = on; },

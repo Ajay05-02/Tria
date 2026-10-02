@@ -31,6 +31,11 @@
         <img class="mark" src="logo.svg" alt="" width="40" height="40">
         <h1>flow<span>state</span></h1>
       </div>
+      <nav class="mast-links" aria-label="Project">
+        <label class="check plain-toggle" title="Use everyday words for the arteries"><input type="checkbox" id="opt-plain" autocomplete="off"><span>Plain words</span></label>
+        <a href="https://github.com/Ajay05-02/cardiovision#external-validation-five-hospitals-four-countries" target="_blank" rel="noopener">Method</a>
+        <a href="https://github.com/Ajay05-02/cardiovision" target="_blank" rel="noopener" class="mast-icon"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-github-logo"/></svg>Code</a>
+      </nav>
       <button type="button" class="btn drawer-toggle js-open-patient" id="btn-patient" aria-controls="patient-panel" aria-expanded="false">
         <svg class="icon" aria-hidden="true"><use href="icons.svg#i-sliders-horizontal"/></svg>Edit patient
       </button>
@@ -41,6 +46,16 @@
       <span><strong>Educational prototype.</strong> Not a medical device or a substitute for coronary angiography.
       Trained on 303 patients from one centre in Tehran.</span>
     </p>
+
+    <section class="guide" id="guide" aria-label="How to use this page" hidden>
+      <p class="guide-lead">flowstate predicts coronary artery disease from routine tests and shows which artery is at risk.</p>
+      <ol>
+        <li><b>Pick or edit a patient</b> in Table 1. The prediction updates as you type.</li>
+        <li><b>Read the risk</b> on the heart and in panel B. Click an artery to focus on it.</li>
+        <li><b>See why</b> in panel C. Click a factor to jump to that value.</li>
+      </ol>
+      <button type="button" class="icon-btn" id="btn-guide-close" aria-label="Hide these tips"><svg class="icon" aria-hidden="true"><use href="icons.svg#i-x"/></svg></button>
+    </section>
 
     <main class="layout">
       <aside class="patient" id="patient-panel" aria-labelledby="t1-title">
@@ -73,8 +88,11 @@
             <label class="check"><input type="checkbox" id="opt-torso"><span>Torso</span></label>
             <label class="check" title="Colour the heart muscle by the risk of the artery that supplies it"><input type="checkbox" id="opt-territory"><span>Risk map</span></label>
             <label class="check"><input type="checkbox" id="opt-beat" checked><span>Heartbeat</span></label>
+            <button type="button" class="btn btn-quiet" id="btn-print" aria-label="Print figure">
+              <svg class="icon" aria-hidden="true"><use href="icons.svg#i-printer"/></svg><span class="btn-label">Print</span>
+            </button>
             <button type="button" class="btn btn-quiet" id="btn-reset" aria-label="Reset view">
-              <svg class="icon" aria-hidden="true"><use href="icons.svg#i-arrow-counter-clockwise"/></svg><span class="btn-label">Reset view</span>
+              <svg class="icon" aria-hidden="true"><use href="icons.svg#i-arrow-counter-clockwise"/></svg><span class="btn-label">Reset</span>
             </button>
           </div>
         </div>
@@ -83,7 +101,7 @@
       <section class="results" aria-label="Results">
         <div class="headline" aria-live="polite">
           <div class="headline-title">
-            <h2>Overall coronary artery disease</h2>
+            <h2 id="headline-title">Overall coronary artery disease</h2>
             <button type="button" class="link-btn drawer-toggle js-open-patient" aria-controls="patient-panel" aria-expanded="false">Edit patient values</button>
           </div>
           <div class="headline-row">
@@ -105,7 +123,7 @@
         </div>
 
         <section class="panel" aria-labelledby="b-title">
-          <h2 id="b-title"><span class="plabel">B</span> Probability of 50% or more narrowing</h2>
+          <h2 id="b-title"><span class="plabel">B</span> <span id="b-text">Probability of 50% or more narrowing</span></h2>
           <div class="dotplot" id="dotplot"></div>
           <p class="note">Ticks mark each model's cut-off.</p>
         </section>

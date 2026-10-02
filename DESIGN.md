@@ -266,6 +266,13 @@ A one-line summary note, then an axis header ("Lowers" and "Raises" over the bar
 ### Heart figure (signature)
 A realistic heart on the figure ground: deep maroon myocardium with a restrained wet sheen and fine surface relief, darker atria, irregular cream epicardial fat deposits that follow the grooves and thin toward the apex, pale cream-pink great arteries and near-black violet veins. Great vessels are tapered tubes that end in a cut disc showing a dark lumen, as in an anatomical specimen. The LAD, LCX and RCA run in fat strips and are coloured by their own risk; their materials are excluded from tone mapping so the rendered hue matches the label swatch and the panel B marker. Selecting an artery dims the others, gently pulses it, tints the muscle it supplies, turns the camera, and retargets panels B and C. Leader-line vessel labels carry a risk swatch, bold name and percentage; anchors are nudged where a label would sit on a great vessel, and every label is held at least 12px inside the figure. A colour-bar legend with a 2px ink cut-off tick sits under the figure with Torso, Risk map and Heartbeat switches and a quiet Reset view button.
 
+### Guide strip, plain words and print
+- **First-visit guide:** one quiet strip under the disclaimer on the figure ground: a one-sentence purpose and three numbered steps (the sequence is the instruction, so numbers are earned). Dismissed with an icon button and remembered per browser.
+- **Plain words:** a masthead checkbox that swaps clinical names for everyday ones everywhere at once (LAD "Front artery", LCX "Side artery", RCA "Right artery", CAD "Any heart artery"), including the 3D labels, panel B, panel C tabs, headline and status. Remembered per browser.
+- **Factor rows are links into Table 1:** clicking a panel C row opens the input it comes from (engineered features jump to their source input), scrolls to it, focuses it and flashes the row in Journal Blue Soft.
+- **Print:** a quiet button prints the patient as an A4 landscape figure: masthead, disclaimer, Figure 1A as one image with its artery labels drawn in, panels B and C, Table 2. Controls, drawer and guide are hidden.
+- **Header links:** Method (README validation section) and Code (GitHub) sit in Journal Blue at the right of the masthead.
+
 ### Motion
 State transitions only: 160ms for colour and border changes, 180 to 200ms for carets and label fades, 260ms for the drawer, 320ms for markers sliding along the axis, all on a strong ease-out (cubic-bezier(0.22, 1, 0.36, 1)). The heart beats at the patient's pulse and the camera tweens to a selected artery. Reduced motion turns off the heartbeat, camera tweens, all transitions and the loading shimmer.
 
