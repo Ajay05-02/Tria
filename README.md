@@ -22,11 +22,12 @@ Built for the **Multimodal AI Hackathon 2026, Track A: Cardiovascular Risk Visua
 ## What it does
 
 - **Predicts** overall CAD (≥50% narrowing in any coronary artery) and stenosis of the **LAD**, **LCX** and **RCA** from 55 demographic, symptom, ECG, echocardiography and laboratory inputs.
-- **Visualises** the result on a 3D heart (Three.js, runs in any modern browser without a GPU):
-  - each artery is coloured green → yellow → red by its predicted risk, with yellow anchored at the model's decision cut-off;
-  - click an artery, or its floating label, and the camera turns to it and highlights the heart muscle it supplies;
+- **Visualises** the result on a realistic 3D heart (Three.js, runs in any modern browser without a GPU):
+  - each coronary artery runs in its fat groove and is coloured green → ochre → red by its predicted risk. Ochre sits exactly at that artery's own decision cut-off, and the colour reaches full green 30 points below it and full red 30 points above it;
+  - click an artery, its label, or its row in the results, and the camera turns to it, highlights the heart muscle it supplies, and the explanation switches to that artery;
   - the **Risk map** toggle colours every territory by its artery's risk;
-  - there is an optional translucent torso and ribs for context, and the heart beats at the patient's pulse rate.
+  - there is an optional translucent torso and ribs for context, and the heart beats at the patient's pulse rate (off when the system asks for reduced motion).
+- **Reads like a journal figure:** the heart is Figure 1A, panel B plots CAD and the three arteries on one shared 0 to 100% axis with each model's cut-off marked, panel C is the SHAP forest plot, Table 1 holds the editable patient values and Table 2 the validation results. Works on desktop, tablet (patient table in a slide-over drawer) and phone.
 - **Explains** every prediction with **SHAP** values: which measurements pushed the risk up or down, and by how much. It also shows the "points" behind the published CAD Consortium risk score.
 - **Updates in real time** as you edit any value, and warns when an input is outside the range seen in training.
 
@@ -106,8 +107,10 @@ app/features.py    labels, units and form layout for the inputs
 app/main.py        FastAPI server and prediction API
 train.py           trains and saves the final models (models/)
 evaluate.py        repeated nested cross-validation → reports/evaluation_v2.json
-static/            web app: index.html, css/, js/heart.js (3D scene), js/app.js (dashboard)
+static/            web app: index.html, css/, js/heart.js (3D scene), js/app.js (dashboard), logo.svg
 data/raw/          the original dataset zip (UCI #411)
+DESIGN.md          the design system: colours, type, layout and the rules behind them
+PRODUCT.md         who the app is for and the product principles the design follows
 ```
 
 ## Data and credits
@@ -116,6 +119,7 @@ data/raw/          the original dataset zip (UCI #411)
 - **CAD Consortium clinical model:** Genders T.S.S. et al., *BMJ* 2012;344:e3485.
 - **eGFR:** CKD-EPI 2021 creatinine equation, Inker L.A. et al., *NEJM* 2021.
 - **Libraries:** scikit-learn, SHAP, FastAPI, Three.js.
+- **Design assets:** Public Sans typeface (SIL Open Font License), Phosphor icons (MIT).
 
 ## Limitations
 
@@ -126,4 +130,12 @@ data/raw/          the original dataset zip (UCI #411)
 
 ## AI assistance
 
-This project was developed with the help of an AI coding assistant (Claude by Anthropic), used for research, code generation and review. All modelling decisions were pre-registered and validated as described above.
+This project was developed with the help of an AI coding assistant, **Claude Code (Claude by Anthropic)**, used for research, code generation and review. All modelling decisions were pre-registered and validated as described above.
+
+The web interface was designed with Claude Code using three open-source design skills:
+
+- **[Impeccable](https://impeccable.style/)** (`pbakaus/impeccable`): product brief, design direction, an independent finish review of the built interface, and the design record in `DESIGN.md`;
+- **[UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)**: healthcare design and accessibility guidance (contrast, keyboard focus, reduced motion, touch targets);
+- **[Taste Skill](https://www.tasteskill.dev/)** (`Leonxlnx/taste-skill`): anti-template rules for typography, colour and copy.
+
+The design direction, the logo choice and every product decision were reviewed and chosen by the author.
