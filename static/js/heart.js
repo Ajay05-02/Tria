@@ -804,7 +804,15 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
       for (const [n, { div }] of Object.entries(labels)) div.querySelector(".nm").textContent = names[n] ?? n;
     },
     // Still image of the current view, used for printing (WebGL canvases do not print reliably)
-    snapshot: () => { renderer.render(scene, camera); return renderer.domElement.toDataURL("image/png"); },
+    // `scale` renders above screen resolution (for the PDF report), then restores the canvas
+    snapshot: (scale = 1) => {
+      const ratio = renderer.getPixelRatio(), w = container.clientWidth, h = container.clientHeight;
+      if (scale !== 1) { renderer.setPixelRatio(ratio * scale); renderer.setSize(w, h, false); }
+      renderer.render(scene, camera);
+      const url = renderer.domElement.toDataURL("image/png");
+      if (scale !== 1) { renderer.setPixelRatio(ratio); renderer.setSize(w, h, false); renderer.render(scene, camera); }
+      return url;
+    },
     setHeartRate: (value) => { bpm = THREE.MathUtils.clamp(value || 70, 30, 180); },
     setBeating: (on) => { beating = on; },
     setTorso: (on) => { torso.visible = on; },

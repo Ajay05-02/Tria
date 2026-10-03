@@ -50,7 +50,7 @@ async function init() {
   $("opt-territory").addEventListener("change", (e) => viewer.setTerritories(e.target.checked));
   $("opt-beat").addEventListener("change", (e) => viewer.setBeating(e.target.checked));
   $("btn-reset").addEventListener("click", () => viewer.resetView());
-  $("btn-print").addEventListener("click", printFigure);
+  $("btn-pdf").addEventListener("click", savePdf);
   $("opt-plain").checked = state.plain;
   $("opt-plain").addEventListener("change", (e) => {
     state.plain = e.target.checked;
@@ -100,21 +100,18 @@ function applyWording() {
 }
 
 // ---------------------------------------------------------------- print the figure as one page
-async function printFigure() {
+// One image of the heart with its artery labels drawn in, so they stay aligned at any size
+async function heartImage() {
   const holder = $("heart-canvas");
-  let img = holder.querySelector(".print-shot");
-  if (!img) {
-    img = Object.assign(document.createElement("img"), { className: "print-shot", alt: "" });
-    holder.append(img);
-  }
-  // One image of the heart with its artery labels drawn in, so they stay aligned at any print size
   const shot = new Image();
-  shot.src = viewer.snapshot();
+  shot.src = viewer.snapshot(2.5);
   await shot.decode();
   const box = holder.getBoundingClientRect();
   const k = shot.naturalWidth / box.width;
   const canvas = Object.assign(document.createElement("canvas"), { width: shot.naturalWidth, height: shot.naturalHeight });
   const g = canvas.getContext("2d");
+  g.fillStyle = "#ffffff";                                    // white behind the transparent 3D canvas
+  g.fillRect(0, 0, canvas.width, canvas.height);
   g.drawImage(shot, 0, 0);
   g.textBaseline = "middle";
   for (const label of holder.querySelectorAll(".vessel-label")) {
@@ -135,13 +132,169 @@ async function printFigure() {
     g.font = `400 ${13 * k}px "Public Sans", sans-serif`;
     g.fillText(label.querySelector(".pct").textContent, x + 23 * k + nameWidth + 6 * k, y + h / 2);
   }
-  img.src = canvas.toDataURL("image/png");
-  await img.decode();
-  const table2 = document.querySelector("details.table2");
-  const wasOpen = table2.open;
-  table2.open = true;
-  window.addEventListener("afterprint", () => { table2.open = wasOpen; }, { once: true });
-  window.print();
+  // crop to the heart and its labels (everything that is not plain white), with a small margin
+  const { data, width, height } = g.getImageData(0, 0, canvas.width, canvas.height);
+  let x0 = width, y0 = height, x1 = 0, y1 = 0;
+  for (let y = 0; y < height; y += 2) {
+    for (let x = 0; x < width; x += 2) {
+      const i = (y * width + x) * 4;
+      if (data[i] < 245 || data[i + 1] < 245 || data[i + 2] < 245) {
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+    }
+  }
+  if (x1 <= x0 || y1 <= y0) return { url: canvas.toDataURL("image/jpeg", 0.92), w: canvas.width, h: canvas.height };
+  const pad = Math.round(0.04 * Math.max(x1 - x0, y1 - y0));
+  x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
+  x1 = Math.min(width, x1 + pad); y1 = Math.min(height, y1 + pad);
+  const crop = Object.assign(document.createElement("canvas"), { width: x1 - x0, height: y1 - y0 });
+  crop.getContext("2d").drawImage(canvas, x0, y0, x1 - x0, y1 - y0, 0, 0, x1 - x0, y1 - y0);
+  return { url: crop.toDataURL("image/jpeg", 0.92), w: crop.width, h: crop.height };
+}
+
+// ---------------------------------------------------------------- PDF report (jsPDF, loaded on first use)
+let jsPdfLoading = null;
+function loadJsPdf() {
+  jsPdfLoading ??= new Promise((resolve, reject) => {
+    const s = Object.assign(document.createElement("script"), {
+      src: "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+    });
+    s.onload = () => resolve(window.jspdf.jsPDF);
+    s.onerror = () => { jsPdfLoading = null; reject(new Error("The PDF library could not be loaded.")); };
+    document.head.append(s);
+  });
+  return jsPdfLoading;
+}
+
+const rgb = (hexColour) => [1, 3, 5].map((i) => parseInt(hexColour.slice(i, i + 2), 16));
+const pdfText = (s) => String(s).replace(/\u2212/g, "-").replace(/\u2265/g, ">=");   // keep to the standard PDF fonts
+
+async function savePdf() {
+  if (!state.prediction) return;
+  const btn = $("btn-pdf");
+  const label = btn.querySelector(".btn-label");
+  btn.disabled = true;
+  label.textContent = "Preparing";
+  try {
+    const [JsPDF, heart] = await Promise.all([loadJsPdf(), heartImage()]);
+    const doc = new JsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const p = state.prediction, ink = [20, 23, 28], ink2 = [68, 74, 84], ink3 = [95, 102, 112], rule = [201, 205, 198];
+    const W = 297, M = 14;
+
+    // header
+    doc.setFont("helvetica", "bold").setFontSize(18).setTextColor(...ink).text("flow", M, 17);
+    doc.setTextColor(29, 79, 128).text("state", M + doc.getTextWidth("flow"), 17);
+    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...ink2)
+      .text("Coronary artery disease risk report", M + 30, 17);
+    doc.text(new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }), W - M, 17, { align: "right" });
+    doc.setDrawColor(...ink).setLineWidth(0.6).line(M, 20, W - M, 20);
+    doc.setFillColor(247, 236, 210).rect(M, 22.5, W - 2 * M, 7, "F");
+    doc.setFontSize(8.5).setTextColor(122, 75, 0).text(
+      "Educational prototype. Not a medical device or a substitute for coronary angiography. Trained on 303 patients from one centre in Tehran.",
+      M + 3, 27);
+
+    // patient line
+    const age = Math.round(state.inputs.Age), sex = state.inputs.Sex === 1 ? "man" : "woman";
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(...ink).text(`${state.patientLabel}, ${age}-year-old ${sex}`, M, 38);
+    if (state.example) {
+      doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...ink2)
+        .text(`Angiography result: ${describeLabels(state.example.labels)}.${state.edited ? " Values edited since loading." : ""}`, M, 43);
+    }
+
+    // heart figure (left)
+    const boxW = 150, boxH = 128;
+    const scale = Math.min(boxW / heart.w, boxH / heart.h);
+    const iw = heart.w * scale, ih = heart.h * scale;
+    doc.addImage(heart.url, "JPEG", M + (boxW - iw) / 2, 48, iw, ih);
+    const capY = 48 + ih + 6;
+    doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(...ink).text("Figure 1A.", M, capY);
+    doc.setFont("helvetica", "normal").setTextColor(...ink2).text(
+      "Each coronary artery is coloured by its predicted risk: green below the model's cut-off, ochre at it, red above it.",
+      M + 17, capY, { maxWidth: boxW - 17 });
+
+    // results (right)
+    const X = 176;
+    const cad = p.cad;
+    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...ink2).text("Overall coronary artery disease", X, 40);
+    doc.setFont("helvetica", "bold").setFontSize(34).setTextColor(...ink).text(pct(cad.probability), X, 55);
+    doc.setFontSize(10).setTextColor(...(cad.high ? [163, 43, 34] : [34, 112, 75]))
+      .text(cad.high ? "Above cut-off" : "Below cut-off", X + 36, 47);
+    doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(...ink2)
+      .text(`Rule-out cut-off ${pct(cad.threshold)}, set to catch 90% of CAD patients.`, X + 36, 53, { maxWidth: W - M - X - 36 });
+
+    // probability table
+    let y = 66;
+    doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(...ink).text("Probability of 50% or more narrowing", X, y);
+    y += 3;
+    doc.setDrawColor(...ink).setLineWidth(0.5).line(X, y, W - M, y);
+    y += 5;
+    doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(...ink3);
+    doc.text("Target", X, y); doc.text("Risk", X + 56, y, { align: "right" }); doc.text("Cut-off", X + 76, y, { align: "right" });
+    doc.text("Status", X + 82, y);
+    if (state.example?.heldout && !state.edited) doc.text("Held-out", W - M, y, { align: "right" });
+    y += 1.8;
+    doc.setLineWidth(0.2).line(X, y, W - M, y);
+    for (const t of TARGETS) {
+      const d = t === "Cath" ? p.cad : p.vessels[t];
+      y += 6.2;
+      doc.setFillColor(...rgb(hex(d.probability, d.threshold))).rect(X, y - 3, 3, 3, "F");
+      doc.setFont("helvetica", "bold").setFontSize(9.5).setTextColor(...ink).text(nameOf(t), X + 5, y);
+      doc.setFont("helvetica", t === "Cath" ? "bold" : "normal").text(pct(d.probability), X + 56, y, { align: "right" });
+      doc.setFont("helvetica", "normal").setTextColor(...ink2).text(pct(d.threshold), X + 76, y, { align: "right" });
+      doc.text(d.high ? "above" : "below", X + 82, y);
+      if (state.example?.heldout && !state.edited) doc.text(pct(state.example.heldout[t]), W - M, y, { align: "right" });
+    }
+    y += 2.5;
+    doc.setDrawColor(...ink).setLineWidth(0.5).line(X, y, W - M, y);
+    if (state.example?.heldout && !state.edited) {
+      y += 4.5;
+      doc.setFontSize(7.5).setTextColor(...ink3).text("Held-out: prediction from a model that never saw this patient.", X, y);
+    }
+
+    // reasons (CAD)
+    y += 9;
+    const ex = p.explanations.Cath;
+    doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(...ink).text("Why this prediction? (overall CAD)", X, y);
+    y += 4.5;
+    doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...ink2).text(
+      `Average patient ${pct(ex.base)}, this patient ${pct(ex.score)} (forest score), calibrated to ${pct(cad.probability)}. Points move the score.`,
+      X, y, { maxWidth: W - M - X });
+    y += 5;
+    const top = ex.contributions.slice(0, 8);
+    const maxAbs = Math.max(...ex.contributions.map((c) => Math.abs(c.shap)), 1e-6);
+    const barX = X + 66, half = 13;
+    for (const c of top) {
+      y += 5.3;
+      doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(...ink)
+        .text(pdfText(`${c.label}  `), X, y, { maxWidth: 52 });
+      doc.setTextColor(...ink3).setFontSize(7.5).text(pdfText(formatValue(c)), X + 54, y);
+      const w = (Math.abs(c.shap) / maxAbs) * half;
+      doc.setFillColor(...(c.shap >= 0 ? [200, 53, 43] : [47, 154, 104]));
+      doc.rect(c.shap >= 0 ? barX + half : barX + half - w, y - 2.6, w, 2.6, "F");
+      doc.setDrawColor(...ink).setLineWidth(0.2).line(barX + half, y - 3.4, barX + half, y + 0.6);
+      doc.setFontSize(8.5).setTextColor(...ink2)
+        .text(`${c.shap >= 0 ? "+" : "-"}${Math.abs(c.shap * 100).toFixed(1)}`, W - M, y, { align: "right" });
+    }
+
+    // footer
+    const ev = state.meta.evaluation, ext = state.meta.external_validation;
+    const auc = (t) => (t === "Cath" ? ev["v2_calibrated_with_threshold"].Cath : ev["v2_two_step_vessels (deployed)"][t]).auc.toFixed(2);
+    doc.setDrawColor(...rule).setLineWidth(0.3).line(M, 191, W - M, 191);
+    doc.setFontSize(7.5).setTextColor(...ink3);
+    doc.text(pdfText(`Validation: 10x repeated nested 5-fold cross-validation on 303 patients, ROC-AUC CAD ${auc("Cath")}, LAD ${auc("LAD")}, LCX ${auc("LCX")}, RCA ${auc("RCA")}.`
+      + (ext ? ` Basic 7-input model checked on 5 hospitals (${ext.n_patients.toLocaleString("en")} patients): mean AUC ${ext.loco_auc[ext.chosen_model].Mean.toFixed(2)}.` : "")), M, 195.5, { maxWidth: W - 2 * M });
+    doc.text("Data: Z-Alizadeh Sani extension (UCI #411, CC BY 4.0). Heart model: HuBMAP Human Reference Atlas, female heart v1.0 by Kristen Browne (CC BY 4.0). Made with flowstate.",
+      M, 200, { maxWidth: W - 2 * M });
+
+    const slug = state.patientLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    doc.save(`flowstate-${slug}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  } catch (err) {
+    console.error(err);
+    showError(`${err.message} Use your browser's print menu to save a PDF instead.`);
+  } finally {
+    btn.disabled = false;
+    label.textContent = "Save PDF";
+  }
 }
 
 // ---------------------------------------------------------------- Table 1 as a drawer (below 1280px)
