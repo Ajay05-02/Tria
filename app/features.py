@@ -115,6 +115,22 @@ ENGINEERED_LABELS = {
     "eGFR": "eGFR",
 }
 
+# Panel C shows one row per clinical fact. Model features that encode the same fact are summed into one row
+# (SHAP values add up, so this is exact); "edit" is the form input (or composite dropdown) a click opens.
+EXPLAIN_GROUPS = [
+    {"id": "chest_pain", "label": "Chest pain type", "edit": "chest_pain",
+     "features": ["Typical Chest Pain", "Atypical", "Nonanginal"]},
+    {"id": "smoking", "label": "Smoking", "edit": "Current Smoker", "features": ["Current Smoker", "EX-Smoker"]},
+    {"id": "ecg", "label": "Ischaemic ECG signs", "edit": "St Depression",
+     "features": ["ECG_isch_count", "Q Wave", "St Elevation", "St Depression", "Tinversion", "Poor R Progression"]},
+    {"id": "ef", "label": "Ejection fraction", "edit": "EF-TTE", "features": ["EF-TTE", "EF_lt50"]},
+    {"id": "rwma", "label": "Wall-motion abnormality", "edit": "Region RWMA",
+     "features": ["Region RWMA", "RWMA_any", "LV_damage"]},
+    {"id": "kidney", "label": "Kidney function", "edit": "CR", "features": ["CR", "eGFR"]},
+    {"id": "nlr", "label": "Neutrophil/lymphocyte ratio", "edit": "Neut", "features": ["NLR", "Neut", "Lymph"]},
+    {"id": "bbb", "label": "Bundle branch block", "edit": "bbb", "features": ["BBB_LBBB", "BBB_RBBB"]},
+]
+
 VESSELS = {
     "Cath": {"name": "Overall CAD", "full": "Coronary artery disease (any vessel ≥50% narrowed)",
              "territory": "Whole heart"},

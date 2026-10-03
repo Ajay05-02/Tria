@@ -17,7 +17,7 @@
         0.873
       ],
       "mean_predicted": 0.225,
-      "specificity_at_flowstate_sensitivity": 0.368,
+      "specificity_at_90_sensitivity": 0.529,
       "flowstate_auc_minus_this": [
         0.113,
         0.074,
@@ -31,7 +31,7 @@
         0.923
       ],
       "mean_predicted": 0.29,
-      "specificity_at_flowstate_sensitivity": 0.632,
+      "specificity_at_90_sensitivity": 0.713,
       "flowstate_auc_minus_this": [
         0.055,
         0.031,
@@ -45,7 +45,7 @@
         0.963
       ],
       "mean_predicted": 0.713,
-      "specificity_at_flowstate_sensitivity": 0.793
+      "specificity_at_90_sensitivity": 0.793
     }
   },
   "esc_rule_ptp_over_15": {
@@ -55,13 +55,13 @@
     "missed_cad_patients": 53
   },
   "flowstate_rule_out_cut_off": {
-    "cut_off": 0.55,
-    "referred_share": 0.726,
-    "sensitivity": 0.935,
-    "specificity": 0.793,
-    "missed_cad_patients": 14
+    "source": "evaluate.py: 10x repeated nested 5-fold CV, cut-off chosen inside the training folds",
+    "mean_cut_off": 0.622,
+    "sensitivity": 0.909,
+    "specificity": 0.808,
+    "missed_cad_patients": 19.7
   },
-  "flowstate_sensitivity_used": 0.935,
+  "sensitivity_target": 0.9,
   "decision_curve": {
     "thresholds": [
       0.1,

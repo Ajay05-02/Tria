@@ -30,8 +30,9 @@ Built for the **Multimodal AI Hackathon 2026, Track A: Cardiovascular Risk Visua
   - the **Risk map** toggle colours every territory by its artery's risk;
   - there is an optional translucent torso and ribs for context, and the heart beats at the patient's pulse rate (off when the system asks for reduced motion).
 - **Reads like a journal figure:** the heart is Figure 1A, panel B plots CAD and the three arteries on one shared 0 to 100% axis with each model's cut-off marked, panel C is the SHAP forest plot, Table 1 holds the editable patient values and Table 2 the validation results. Works on desktop, tablet (patient table in a slide-over drawer) and phone.
-- **Explains** every prediction with **SHAP** values: which measurements pushed the risk up or down, and by how much. It also shows the "points" behind the published CAD Consortium risk score.
-- **Updates in real time** as you edit any value, and warns when an input is outside the range seen in training.
+- **Explains** every prediction with **SHAP** values in percentage points of the risk shown: the bars add up exactly to the difference between this patient and a typical study patient. Features that describe the same clinical fact are merged into one row (for example chest pain type), so nothing is counted twice. It also shows the "points" behind the published CAD Consortium risk score.
+- **Shows what it can and cannot localise:** panel B switches between each artery's risk and **"If CAD is present"**, which artery is most likely narrowed, compared with the average patient with CAD (see [Which artery?](#which-artery)).
+- **Updates in real time** (about 0.15 s per prediction) as you edit any value, and warns when an input is outside the range seen in training. Risks are shown as ">99%" or "<1%" at the extremes, never 100% or 0%.
 - **Starts as a blank form** (typical measurements, no symptoms or findings) for entering a new patient. The 303 study patients are available as examples; for each one the app also shows the **held-out prediction** from a model that never saw that patient, because the final model learned from all of them and is optimistic on them.
 - **Plain words** switch for patients and non-cardiologists, a first-visit guide, click-a-factor-to-edit, and **Save PDF**: a one-page A4 patient report (heart with risk-coloured arteries, probabilities against each cut-off, held-out predictions for study patients, top reasons, validation and credits), generated in the browser with jsPDF.
 
@@ -59,20 +60,32 @@ At each model's own cut-off, chosen inside the training folds (CAD: catch at lea
 - **Improvement over our first model:** evaluated on the same splits, AUC rose on all four targets (+0.012 to +0.021). Calibration slopes also improved, from 1.3–2.2 (probabilities too timid) to about 1.0.
 - **Why the arteries score lower:** the dataset records ECG and wall-motion findings only as present/absent. It never says *which* leads or heart regions are affected, and that location information is what clinicians use to tell LCX from RCA disease.
 
-All numbers come from `python evaluate.py`, which saves them to `reports/evaluation_v2.json`.
+All numbers come from `python evaluate.py`, which saves them to `reports/evaluation_v2.json`. Table 2 in the app also draws the ROC curves and a calibration plot of the held-out predictions.
+
+### Which artery?
+
+The artery AUCs above are measured over all 303 patients, so they include telling healthy patients from sick ones, which the CAD model already does well. The harder question is *which* artery is narrowed in a patient who has CAD:
+
+| Among CAD patients only | LAD | LCX | RCA |
+|---|---|---|---|
+| ROC-AUC of P(artery \| CAD), held out | 0.58 | 0.64 | 0.57 |
+
+That is only modestly better than guessing (0.5), and predicting single- against multi-vessel disease is no better (AUC 0.55). The cause is the data, not the model: ECG and wall-motion findings are recorded as present/absent, never with their location. So **most of an artery's colour on the heart reflects the overall CAD risk**. The app says so in Table 2, and panel B's "If CAD is present" view shows the artery-level estimate on its own, so viewers can see how much the arteries really differ for a given patient.
 
 ## Against the scores clinicians use today
 
 Before angiography, guidelines estimate risk from age, sex and the type of chest pain. We compared flowstate on the same 303 patients with the two standard scores: the **ESC 2019 pre-test probability** (Knuuti et al., *Eur Heart J* 2020, Table 5) and the **CAD Consortium clinical score** (Genders et al., *BMJ* 2012). flowstate's numbers are its held-out (cross-validated) predictions, so no patient was scored by a model that had seen them.
 
-| Method | ROC-AUC (95% CI) | Specificity at 94% sensitivity |
+| Method | ROC-AUC (95% CI) | Specificity at 90% sensitivity* |
 |---|---|---|
-| ESC 2019 pre-test probability | 0.82 (0.77–0.87) | 37% |
-| CAD Consortium clinical score | 0.88 (0.83–0.92) | 63% |
+| ESC 2019 pre-test probability | 0.82 (0.77–0.87) | 53% |
+| CAD Consortium clinical score | 0.88 (0.83–0.92) | 71% |
 | **flowstate** | **0.93** (0.90–0.96) | **79%** |
 
+\*Each method at its own best cut-off on these patients: the share of patients without CAD it would spare an angiogram while still catching 90% of CAD.
+
 - **AUC gain:** +0.11 over ESC (paired bootstrap 95% CI 0.07 to 0.16) and +0.06 over CAD Consortium (0.03 to 0.08). Neither interval includes zero.
-- **Fewer missed patients:** the ESC rule "test when pre-test probability is above 15%" misses 53 of 216 CAD patients. flowstate's rule-out cut-off misses 14, and still spares more patients without CAD an angiogram (specificity 79% against 71%).
+- **Fewer missed patients:** the ESC rule "test when pre-test probability is above 15%" misses 53 of 216 CAD patients (sensitivity 76%). flowstate's rule-out cut-off misses about 20 (sensitivity 91%) and still spares more patients without CAD an angiogram (specificity 81% against 71%). flowstate's figures come from nested cross-validation, where the cut-off is chosen inside the training folds; picking the cut-off on the same held-out predictions would have flattered it (14 missed).
 - **Decision curve:** flowstate has the highest net benefit at every threshold from 10% to 85%, even after both scores are recalibrated to these patients by cross-validated logistic recalibration. Published scores were built for lower-risk populations, so recalibrating them makes the comparison fair to them.
 - **Why it wins:** the CAD Consortium score is one of flowstate's own inputs. The gain comes from what the scores leave out: ECG, echocardiography and laboratory results.
 
@@ -127,6 +140,7 @@ Reproduce with `python external_validation.py` (under a minute; downloads UCI #4
 
 - **Two-step vessel model.** A blocked artery *means* CAD, so an artery must never look riskier than CAD itself. With independent models, that happened for 19.8% of patients; the two-step design removes it (0%) at a cost of 0.006 mean vessel AUC.
 - **Pre-registered decisions.** Candidate models, the selection rule, the threshold rules and the data-cleaning rules were written down before any experiment (`notebooks/`, `preregistration.json` in the Colab run).
+- **Explanations in the risk you see.** SHAP explains the forest's raw score, but the dashboard shows the calibrated probability. The server rescales each SHAP value by (calibrated change) / (raw change), so the bars add up exactly to (this patient − typical patient) in percentage points. The CAD Consortium score is built from age, sex, chest pain and risk factors, so its share is split among those rows in proportion to how far each term moved the score (the Aumann–Shapley rule for a linear score). For an artery, P(CAD) × P(artery | CAD) splits exactly into an "Overall CAD risk" part and an artery part (the Shapley split of a product). `tests/` checks that the bars add up for every target.
 - **Label noise.** One patient is labelled LAD-stenotic but CAD-negative. We keep the label as recorded; relabelling or excluding the patient changes the CAD AUC by less than 0.01.
 
 ## Run it locally
@@ -137,6 +151,13 @@ Prerequisites: Python 3.11+ (tested on 3.13).
 pip install -r requirements.txt
 python train.py                       # about 20 s: builds models/ and data/processed/
 python -m uvicorn app.main:app --port 8000
+```
+
+Tests (no target leakage, artery risk never above CAD, explanations add up, input checks, reported metrics):
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
 ```
 
 Then open http://localhost:8000.
@@ -175,6 +196,7 @@ train.py           trains and saves the final models (models/)
 evaluate.py        repeated nested cross-validation → reports/evaluation_v2.json
 external_validation.py  leave-one-hospital-out check on 5 hospitals → reports/external_validation.json
 clinical_baseline.py    flowstate against the ESC 2019 and CAD Consortium scores → reports/clinical_baseline.json
+tests/             pytest checks of the model and API (python -m pytest)
 static/            web app: index.html, css/, js/heart.js (3D scene), js/app.js (dashboard), logo.svg
 static/models/     heart.glb: the Human Reference Atlas heart with named LAD, LCX and RCA meshes (CC BY 4.0)
 tools/             build_heart_glb.py, which builds heart.glb from the atlas file
@@ -199,7 +221,7 @@ PRODUCT.md         who the app is for and the product principles the design foll
 - **External validation covers the basic inputs only.** A 7-input model holds up across five hospitals in four countries (mean AUC 0.77), but the other hospitals did not record echocardiography or the laboratory panel, so the full 55-input model cannot be tested outside Tehran, and the per-artery models cannot be tested anywhere else: no public dataset records which artery is narrowed.
 - **Percentages shift between hospitals.** Average predicted risk differs from the observed rate by up to 37 points across sites, so a new hospital should recalibrate before relying on the percentages.
 - **Older external data:** the UCI hospitals collected their patients in the 1980s; Tehran's cholesterol is a Friedewald estimate (LDL + HDL + TG/5).
-- **Vessel predictions reflect how extensive the disease is,** not its exact location: the inputs contain no ECG-lead or wall-segment information.
+- **The arteries are hard to tell apart.** Among CAD patients, the artery models rank at AUC 0.57–0.64, so an artery's risk mostly reflects the overall CAD risk: the inputs contain no ECG-lead or wall-segment information. See [Which artery?](#which-artery).
 - **The 3D heart is a reference anatomy** (one adult female from the Visible Human Project, left-dominant coronary tree), not patient-specific imaging. Each artery is coloured by its predicted risk along its whole length; the data say nothing about where along the artery a narrowing is.
 
 ## AI assistance

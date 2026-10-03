@@ -123,8 +123,12 @@
 
         <section class="panel" aria-labelledby="b-title">
           <h2 id="b-title"><span class="plabel">B</span> <span id="b-text">Probability of 50% or more narrowing</span></h2>
+          <div class="seg" id="b-mode" role="group" aria-label="Show the arteries as">
+            <button type="button" data-mode="risk" aria-pressed="true">Risk</button>
+            <button type="button" data-mode="cond" aria-pressed="false">If CAD is present</button>
+          </div>
           <div class="dotplot" id="dotplot"></div>
-          <p class="note">Ticks mark each model's cut-off.</p>
+          <p class="note" id="b-note">Ticks mark each model's cut-off.</p>
         </section>
 
         <section class="panel" aria-labelledby="c-title">

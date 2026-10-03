@@ -3,6 +3,10 @@ import { createHeartViewer, riskScore, riskColor } from "./heart.js";
 
 const $ = (id) => document.getElementById(id);
 const pct = (p) => `${Math.round(p * 100)}%`;
+// Risks are never shown as 0% or 100%: no model is that certain
+const pctRisk = (p) => (p >= 0.995 ? ">99%" : p < 0.005 ? "<1%" : pct(p));
+const signed = (p) => `${p >= 0 ? "+" : "−"}${Math.abs(p * 100).toFixed(1)}`;
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const TARGETS = ["Cath", "LAD", "LCX", "RCA"];
 const VESSELS = ["LAD", "LCX", "RCA"];
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -26,6 +30,7 @@ const state = {
   edited: false,      // true once any value has been changed by hand
   selectedVessel: null,
   patientLabel: "",
+  mode: "risk",       // panel B and the heart: "risk" (each artery's risk) or "cond" (which artery, if CAD)
 };
 let viewer;
 let predictTimer;
@@ -57,6 +62,13 @@ async function init() {
     store.set("flowstate-plain", state.plain ? "1" : "0");
     applyWording();
   });
+  for (const b of document.querySelectorAll("#b-mode button")) {
+    b.addEventListener("click", () => {
+      state.mode = b.dataset.mode;
+      for (const o of document.querySelectorAll("#b-mode button")) o.setAttribute("aria-pressed", String(o === b));
+      applyWording();
+    });
+  }
   $("btn-all-factors").addEventListener("click", () => {
     state.showAll = !state.showAll;
     renderExplanation();
@@ -88,7 +100,9 @@ const nameOf = (t) => (state.plain ? PLAIN : TECH)[t];
 function applyWording() {
   $("opt-plain").checked = state.plain;
   $("headline-title").textContent = state.plain ? "Chance of narrowed heart arteries" : "Overall coronary artery disease";
-  $("b-text").textContent = state.plain ? "Chance each artery is at least half blocked" : "Probability of 50% or more narrowing";
+  $("b-text").textContent = state.mode === "cond"
+    ? (state.plain ? "If arteries are narrowed: which one" : "If CAD is present: which artery")
+    : (state.plain ? "Chance each artery is at least half blocked" : "Probability of 50% or more narrowing");
   viewer.setLabelNames(state.plain ? PLAIN : TECH);
   for (const t of TARGETS) {
     dotRows[t].querySelector(".dp-name b").textContent = nameOf(t);
@@ -208,15 +222,16 @@ async function savePdf() {
     doc.addImage(heart.url, "JPEG", M + (boxW - iw) / 2, 48, iw, ih);
     const capY = 48 + ih + 6;
     doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(...ink).text("Figure 1A.", M, capY);
-    doc.setFont("helvetica", "normal").setTextColor(...ink2).text(
-      "Each coronary artery is coloured by its predicted risk: green below the model's cut-off, ochre at it, red above it.",
+    doc.setFont("helvetica", "normal").setTextColor(...ink2).text(state.mode === "cond"
+      ? "Each coronary artery is coloured by how likely it is to be the narrowed one if CAD is present, against the average patient with CAD."
+      : "Each coronary artery is coloured by its predicted risk: green below the model's cut-off, ochre at it, red above it.",
       M + 17, capY, { maxWidth: boxW - 17 });
 
     // results (right)
     const X = 176;
     const cad = p.cad;
     doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...ink2).text("Overall coronary artery disease", X, 40);
-    doc.setFont("helvetica", "bold").setFontSize(34).setTextColor(...ink).text(pct(cad.probability), X, 55);
+    doc.setFont("helvetica", "bold").setFontSize(34).setTextColor(...ink).text(pdfText(pctRisk(cad.probability)), X, 55);
     doc.setFontSize(10).setTextColor(...(cad.high ? [163, 43, 34] : [34, 112, 75]))
       .text(cad.high ? "Above cut-off" : "Below cut-off", X + 36, 47);
     doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(...ink2)
@@ -239,10 +254,10 @@ async function savePdf() {
       y += 6.2;
       doc.setFillColor(...rgb(hex(d.probability, d.threshold))).rect(X, y - 3, 3, 3, "F");
       doc.setFont("helvetica", "bold").setFontSize(9.5).setTextColor(...ink).text(nameOf(t), X + 5, y);
-      doc.setFont("helvetica", t === "Cath" ? "bold" : "normal").text(pct(d.probability), X + 56, y, { align: "right" });
+      doc.setFont("helvetica", t === "Cath" ? "bold" : "normal").text(pctRisk(d.probability), X + 56, y, { align: "right" });
       doc.setFont("helvetica", "normal").setTextColor(...ink2).text(pct(d.threshold), X + 76, y, { align: "right" });
       doc.text(d.high ? "above" : "below", X + 82, y);
-      if (state.example?.heldout && !state.edited) doc.text(pct(state.example.heldout[t]), W - M, y, { align: "right" });
+      if (state.example?.heldout && !state.edited) doc.text(pctRisk(state.example.heldout[t]), W - M, y, { align: "right" });
     }
     y += 2.5;
     doc.setDrawColor(...ink).setLineWidth(0.5).line(X, y, W - M, y);
@@ -257,23 +272,21 @@ async function savePdf() {
     doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(...ink).text("Why this prediction? (overall CAD)", X, y);
     y += 4.5;
     doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(...ink2).text(
-      `Average patient ${pct(ex.base)}, this patient ${pct(ex.score)} (forest score), calibrated to ${pct(cad.probability)}. Points move the score.`,
+      `Typical study patient ${pctRisk(ex.base)}, this patient ${pctRisk(ex.probability)}. Each bar is a factor's share of the difference, in percentage points.`,
       X, y, { maxWidth: W - M - X });
     y += 5;
     const top = ex.contributions.slice(0, 8);
-    const maxAbs = Math.max(...ex.contributions.map((c) => Math.abs(c.shap)), 1e-6);
+    const maxAbs = Math.max(...ex.contributions.map((c) => Math.abs(c.points)), 1e-6);
     const barX = X + 66, half = 13;
     for (const c of top) {
-      y += 5.3;
-      doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(...ink)
-        .text(pdfText(`${c.label}  `), X, y, { maxWidth: 52 });
-      doc.setTextColor(...ink3).setFontSize(7.5).text(pdfText(formatValue(c)), X + 54, y);
-      const w = (Math.abs(c.shap) / maxAbs) * half;
-      doc.setFillColor(...(c.shap >= 0 ? [200, 53, 43] : [47, 154, 104]));
-      doc.rect(c.shap >= 0 ? barX + half : barX + half - w, y - 2.6, w, 2.6, "F");
+      y += 7;
+      doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(...ink).text(pdfText(c.label), X, y - 0.8, { maxWidth: 64 });
+      doc.setTextColor(...ink3).setFontSize(7).text(pdfText(c.text), X, y + 2.3, { maxWidth: 64 });
+      const w = (Math.abs(c.points) / maxAbs) * half;
+      doc.setFillColor(...(c.points >= 0 ? [200, 53, 43] : [47, 154, 104]));
+      doc.rect(c.points >= 0 ? barX + half : barX + half - w, y - 2.6, w, 2.6, "F");
       doc.setDrawColor(...ink).setLineWidth(0.2).line(barX + half, y - 3.4, barX + half, y + 0.6);
-      doc.setFontSize(8.5).setTextColor(...ink2)
-        .text(`${c.shap >= 0 ? "+" : "-"}${Math.abs(c.shap * 100).toFixed(1)}`, W - M, y, { align: "right" });
+      doc.setFontSize(8.5).setTextColor(...ink2).text(pdfText(signed(c.points)), W - M, y, { align: "right" });
     }
 
     // footer
@@ -327,7 +340,7 @@ function buildPatientSelect() {
   sel.add(new Option("New patient (blank form)", "median"));
   const group = Object.assign(document.createElement("optgroup"), { label: "Example patients from the study" });
   for (const p of state.meta.patients) {
-    group.append(new Option(`Patient #${p.index}: ${describeLabels(p.labels)}`, String(p.index)));
+    group.append(new Option(`Example ${p.index + 1}: ${p.age}-year-old ${p.sex === 1 ? "man" : "woman"}`, String(p.index)));
   }
   sel.append(group);
   sel.addEventListener("change", () => (sel.value === "median" ? loadMedian() : loadPatient(Number(sel.value))));
@@ -335,11 +348,11 @@ function buildPatientSelect() {
 
 async function loadPatient(index) {
   const res = await fetch(`api/patients/${index}`);
-  if (!res.ok) { showError(`Could not load patient #${index} (server returned ${res.status}).`); return; }
+  if (!res.ok) { showError(`Could not load example patient ${index + 1} (server returned ${res.status}).`); return; }
   const data = await res.json();
   $("patient-select").value = String(index);
   state.inputs = { ...data.inputs };
-  state.patientLabel = `Example patient #${index}`;
+  state.patientLabel = `Example patient ${index + 1}`;
   state.example = { labels: data.labels, heldout: data.heldout };
   state.edited = false;
   renderTruth();
@@ -498,7 +511,7 @@ function renderTruth() {
   if (state.edited) {
     html += ` <span class="muted">Values edited, so this is now a new patient.</span>`;
   } else if (heldout) {
-    const list = TARGETS.map((t) => `${nameOf(t)} ${pct(heldout[t])}`).join(", ");
+    const list = TARGETS.map((t) => `${nameOf(t)} ${esc(pctRisk(heldout[t]))}`).join(", ");
     html += `<br>Held-out prediction, from a model that never saw this patient: <b>${list}</b>.`
       + ` <span class="muted">The live numbers come from the final model, which learned from all 303 patients.</span>`;
   }
@@ -546,19 +559,29 @@ function showError(message) {
 
 const hex = (p, t) => `#${riskColor(riskScore(p, t)).getHexString()}`;
 
+// An artery as panel B and the heart show it: its overall risk against the model's cut-off, or, "if CAD is
+// present", P(artery | CAD) against the average patient with CAD
+function vesselView(v) {
+  const d = state.prediction.vessels[v];
+  if (state.mode !== "cond" || !state.meta.cad_vessel_rate) return d;
+  const avg = state.meta.cad_vessel_rate[v];
+  return { probability: d.conditional, threshold: avg, high: d.conditional >= avg };
+}
+
 function render() {
   const p = state.prediction;
   const cad = p.cad;
 
   const risks = {};
   for (const v of VESSELS) {
-    const d = p.vessels[v];
-    risks[v] = { probability: d.probability, score: riskScore(d.probability, d.threshold), high: d.high };
+    const d = vesselView(v);
+    risks[v] = { probability: d.probability, score: riskScore(d.probability, d.threshold), high: d.high, text: pctRisk(d.probability) };
   }
   viewer.setRisks(risks);
   viewer.setHeartRate(state.inputs.PR);
 
-  $("cad-pct").textContent = pct(cad.probability);
+  $("cad-pct").textContent = pctRisk(cad.probability);
+  document.querySelector(".legend-text span:nth-child(2)").textContent = state.mode === "cond" ? "Average" : "Cut-off";
   const status = $("cad-status");
   status.textContent = state.plain
     ? (cad.high ? "Above the warning line" : "Below the warning line")
@@ -589,6 +612,7 @@ function renderCaption() {
       ? ` ${PLAIN[v]} (${v}): the shaded muscle is what it feeds, ${info.territory.toLowerCase()}.`
       : ` ${info.full} (${v}), shaded: ${info.territory.toLowerCase()}.`;
   }
+  if (state.mode === "cond") text += " Arteries coloured by which is likely narrowed, if CAD is present.";
   $("caption-text").textContent = text;
 }
 
@@ -631,18 +655,26 @@ function buildDotplot() {
 
 function updateDotplot() {
   const p = state.prediction;
+  const cond = state.mode === "cond", loc = state.meta.localisation_auc;
   for (const t of TARGETS) {
-    const d = t === "Cath" ? p.cad : p.vessels[t];
+    const d = t === "Cath" ? p.cad : vesselView(t);
     const row = dotRows[t];
     row.querySelector(".dp-cut").style.setProperty("--x", d.threshold);
     const mark = row.querySelector(".dp-mark");
     mark.style.setProperty("--x", d.probability);
     mark.style.setProperty("--c", hex(d.probability, d.threshold));
-    row.querySelector(".dp-val").textContent = pct(d.probability);
-    const name = t === "Cath" ? (state.plain ? PLAIN.Cath : "Overall CAD") : nameOf(t);
-    row.setAttribute("aria-label", `${name}: ${pct(d.probability)}, ${d.high ? "above" : "below"} the ${pct(d.threshold)} cut-off`
+    row.querySelector(".dp-val").textContent = pctRisk(d.probability);
+    const auc = t !== "Cath" && cond && loc ? loc[t] : aucFor(t);
+    const small = row.querySelector(".dp-name small");
+    if (small && auc) small.textContent = `AUC ${auc.toFixed(2)}`;
+    const name = t === "Cath" ? (state.plain ? PLAIN.Cath : "Overall CAD") : nameOf(t) + (cond ? " if CAD is present" : "");
+    row.setAttribute("aria-label", `${name}: ${pctRisk(d.probability)}, ${d.high ? "above" : "below"} the ${pct(d.threshold)} ${t !== "Cath" && cond ? "average" : "cut-off"}`
       + (t === "Cath" ? "" : ". Select to show this artery"));
   }
+  $("b-note").innerHTML = cond && loc
+    ? `Ticks mark the average patient with CAD. Picking the artery is much harder than detecting CAD: among CAD patients these rank at
+       AUC ${VESSELS.map((v) => `${v} ${loc[v].toFixed(2)}`).join(", ")} (0.5 is guessing).`
+    : "Ticks mark each model's cut-off.";
   markSelection();
 }
 
@@ -694,16 +726,6 @@ function buildTabs() {
   });
 }
 
-function formatValue(c) {
-  const field = state.meta.fields.find((f) => f.key === c.feature);
-  if (field?.kind === "binary" || ["EF_lt50", "RWMA_any"].includes(c.feature)) return c.value >= 0.5 ? "yes" : "no";
-  if (field?.kind === "select") return field.options[String(Math.round(c.value))] ?? c.value;
-  if (["Typical Chest Pain", "Atypical", "Nonanginal"].includes(c.feature)) return c.value >= 0.5 ? "yes" : "no";
-  const whole = Math.abs(c.value - Math.round(c.value)) < 1e-9;
-  const digits = whole || Math.abs(c.value) >= 100 ? 0 : Math.abs(c.value) >= 10 ? 1 : 2;
-  return `${c.value.toFixed(digits).replace(/^-/, "−")}${c.unit ? ` ${c.unit}` : ""}`;
-}
-
 function renderExplanation() {
   const t = state.explainTarget;
   for (const b of document.querySelectorAll("#explain-tabs button")) {
@@ -714,21 +736,22 @@ function renderExplanation() {
   $("explain-panel").setAttribute("aria-labelledby", `tab-${t}`);
   const ex = state.prediction.explanations[t];
   const items = state.showAll ? ex.contributions : ex.contributions.slice(0, 8);
-  const maxAbs = Math.max(...ex.contributions.map((c) => Math.abs(c.shap)), 1e-6);
+  const maxAbs = Math.max(...ex.contributions.map((c) => Math.abs(c.points)), 1e-6);
 
-  // SHAP explains the forest's raw score; say how it maps to the calibrated figure shown elsewhere
+  // The server reports SHAP values in percentage points of the risk shown, so the bars add up to the difference
   $("explain-summary").innerHTML = state.plain
-    ? `Bars to the right push the risk up, bars to the left bring it down. Click one to change that value.`
-    : t === "Cath"
-      ? `The average patient scores <b>${pct(ex.base)}</b> and this patient <b>${pct(ex.score)}</b>, which calibrates to <b>${pct(state.prediction.cad.probability)}</b>.`
-      : `This patient's ${t} score is <b>${pct(ex.score)}</b> (average CAD patient <b>${pct(ex.base)}</b>).`;
+    ? `A typical patient in the study starts at <b>${esc(pctRisk(ex.base))}</b>; these factors bring this patient to <b>${esc(pctRisk(ex.probability))}</b>. Click one to change it.`
+    : `Typical study patient <b>${esc(pctRisk(ex.base))}</b>, this patient <b>${esc(pctRisk(ex.probability))}</b>. Each bar is a factor's share of the difference, in percentage points`
+      + (t === "Cath" ? "." : `; “Overall CAD risk” is the part that comes from CAD itself.`);
 
   $("explain-bars").innerHTML = items.map((c) => {
-    const w = (Math.abs(c.shap) / maxAbs) * 50;
-    return `<button type="button" class="bar-row" data-feature="${c.feature}" title="${c.label}: ${formatValue(c)}. Click to edit">
-      <span class="lbl"><b>${c.label}</b><small>${formatValue(c)}</small></span>
-      <span class="bar-track"><span class="bar ${c.shap >= 0 ? "up" : "down"}" style="width:${w}%"></span></span>
-      <span class="val num">${c.shap >= 0 ? "+" : "−"}${Math.abs(c.shap * 100).toFixed(1)}</span>
+    const w = (Math.abs(c.points) / maxAbs) * 50;
+    const label = c.id === "cad_risk" && state.plain ? "Chance of any narrowing" : c.label;
+    const action = c.edit.startsWith("tab:") ? "Click to see why" : "Click to edit";
+    return `<button type="button" class="bar-row" data-edit="${esc(c.edit)}" title="${esc(`${label}: ${c.text}. ${action}`)}">
+      <span class="lbl"><b>${esc(label)}</b><small>${esc(c.text)}</small></span>
+      <span class="bar-track"><span class="bar ${c.points >= 0 ? "up" : "down"}" style="width:${w}%"></span></span>
+      <span class="val num">${signed(c.points)}</span>
     </button>`;
   }).join("");
   $("btn-all-factors").textContent = state.showAll ? "Show the top 8 factors" : `Show all ${ex.contributions.length} factors`;
@@ -746,18 +769,12 @@ function renderExplanation() {
     <p class="note">Means ${pct(cadc.published_probability)} in the lower-risk population it was built on; here it is one model input.</p>`;
 }
 
-// Clicking a factor opens its value in Table 1. Engineered features jump to the input they are computed from.
-const SOURCE_INPUT = {
-  CADC_logit: "Age", ECG_isch_count: "St Depression", EF_lt50: "EF-TTE", RWMA_any: "Region RWMA",
-  LV_damage: "EF-TTE", NLR: "Neut", eGFR: "CR", BMI: "Weight",
-};
-function focusInput(feature) {
-  const key = SOURCE_INPUT[feature] ?? feature;
-  let el = document.querySelector(`#patient-form [data-key="${CSS.escape(key)}"]`);
-  if (!el) {
-    const comp = state.meta.composites.find((c) => c.features.includes(feature));
-    if (comp) el = document.querySelector(`[data-composite="${comp.id}"]`);
-  }
+// Clicking a factor opens its value in Table 1 (the server names the input, or the dropdown, to open);
+// "Overall CAD risk" switches to the CAD explanation instead
+function focusInput(edit) {
+  if (edit.startsWith("tab:")) { $(`tab-${edit.slice(4)}`)?.click(); return; }
+  const el = document.querySelector(`#patient-form [data-key="${CSS.escape(edit)}"]`)
+    ?? document.querySelector(`[data-composite="${CSS.escape(edit)}"]`);
   if (!el) return;
   if (window.matchMedia("(max-width: 1279px)").matches && !document.body.classList.contains("drawer-open")) {
     document.querySelector(".js-open-patient").click();
@@ -774,8 +791,8 @@ function focusInput(feature) {
   }
 }
 document.addEventListener("click", (e) => {
-  const row = e.target.closest(".bar-row[data-feature]");
-  if (row) focusInput(row.dataset.feature);
+  const row = e.target.closest(".bar-row[data-edit]");
+  if (row) focusInput(row.dataset.edit);
 });
 
 // ---------------------------------------------------------------- Table 2: validation metrics
@@ -809,6 +826,7 @@ function renderMetrics() {
       <thead><tr><th>Target</th><th>ROC-AUC (95% CI)</th><th>Brier</th><th>Cal. slope</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+    ${renderCurves()}
     ${hasCut ? `<table class="booktabs">
       <thead><tr><th>At the cut-off</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>Specificity</th><th>F1</th></tr></thead>
       <tbody>${cutRows}</tbody>
@@ -818,7 +836,56 @@ function renderMetrics() {
     : `<p class="note">CAD at the rule-out cut-off: sensitivity <b>${pct(cath.sensitivity)}</b>, specificity <b>${pct(cath.specificity)}</b>,
       PPV ${pct(cath.ppv)}, NPV ${pct(cath.npv)}.</p>`}
     <p class="note">${state.meta.n_patients} patients. ${ev.protocol} AUC 0.5 is guessing, 1.0 is perfect; calibration slope near 1 means the percentages hold.
-    Artery risk = P(CAD) × P(artery | CAD), so it never exceeds CAD.</p>${renderClinical()}${renderExternal()}`;
+    Artery risk = P(CAD) × P(artery | CAD), so it never exceeds CAD.</p>${renderLocalisation()}${renderClinical()}${renderExternal()}`;
+}
+
+// ROC and calibration curves of the held-out predictions (train.py), as one two-panel SVG
+const SERIES = { Cath: "var(--s-cad)", LAD: "var(--s-lad)", LCX: "var(--s-lcx)", RCA: "var(--s-rca)" };
+function renderCurves() {
+  const hc = state.meta.heldout_curves;
+  if (!hc) return "";
+  const S = 146, TOP = 16, LEFT = [42, 246];
+  const X = (i, v) => LEFT[i] + v * S, Y = (v) => TOP + (1 - v) * S;
+  const xy = (x, y) => `${x.toFixed(1)},${y.toFixed(1)}`;
+  const name = (t) => (t === "Cath" ? "CAD" : t);
+  const frame = (i, title, xLabel, yLabel) => [0, 0.5, 1].map((v) => `
+      <line class="grid" x1="${X(i, 0)}" x2="${X(i, 1)}" y1="${Y(v)}" y2="${Y(v)}"/>
+      <line class="grid" x1="${X(i, v)}" x2="${X(i, v)}" y1="${Y(0)}" y2="${Y(1)}"/>
+      <text class="tick" x="${X(i, v)}" y="${Y(0) + 14}" text-anchor="middle">${v}</text>
+      <text class="tick" x="${X(i, 0) - 5}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`).join("") + `
+      <line class="ref" x1="${X(i, 0)}" y1="${Y(0)}" x2="${X(i, 1)}" y2="${Y(1)}"/>
+      <text class="panel-t" x="${X(i, 0)}" y="10">${title}</text>
+      <text class="axis-t" x="${X(i, 0.5)}" y="${Y(0) + 30}" text-anchor="middle">${xLabel}</text>
+      <text class="axis-t" text-anchor="middle" transform="translate(${X(i, 0) - 31} ${Y(0.5)}) rotate(-90)">${yLabel}</text>`;
+  const roc = TARGETS.map((t) => {
+    const c = hc.targets[t];
+    return `<polyline class="ser" style="stroke:${SERIES[t]}" points="${c.roc.map(([f, s]) => xy(X(0, f), Y(s))).join(" ")}"><title>${name(t)}: AUC ${c.auc.toFixed(2)}</title></polyline>`;
+  }).join("");
+  const cal = TARGETS.map((t) => {
+    const c = hc.targets[t];
+    const line = `<polyline class="ser" style="stroke:${SERIES[t]}" points="${c.calibration.map(([pr, ob]) => xy(X(1, pr), Y(ob))).join(" ")}"/>`;
+    return line + c.calibration.map(([pr, ob, n], j) => `<circle class="dot" cx="${X(1, pr).toFixed(1)}" cy="${Y(ob).toFixed(1)}" r="4" style="fill:${SERIES[t]}">
+      <title>${name(t)}, fifth ${j + 1} (${n} patients): predicted ${pct(pr)}, observed ${pct(ob)}</title></circle>`).join("");
+  }).join("");
+  const legend = TARGETS.map((t) => `<span><i style="background:${SERIES[t]}"></i>${name(t)}</span>`).join("");
+  return `<figure class="curves">
+    <div class="curve-legend">${legend}</div>
+    <svg viewBox="0 0 400 204" role="img" aria-label="ROC curves and calibration plot of the held-out predictions; the numbers are in the tables">
+      ${frame(0, "ROC", "1 − specificity", "Sensitivity")}${roc}${frame(1, "Calibration", "Predicted risk", "Observed rate")}${cal}
+    </svg>
+    <figcaption class="note">Held-out predictions: each patient scored by a model trained without them. Left: the dashed diagonal is guessing.
+      Right: patients split into fifths by predicted risk; points on the diagonal mean the percentages hold.</figcaption>
+  </figure>`;
+}
+
+// How well the models tell WHICH artery is narrowed, among patients who have CAD
+function renderLocalisation() {
+  const loc = state.meta.localisation_auc;
+  if (!loc) return "";
+  return `<p class="note"><b>Which artery?</b> Among patients with CAD, the artery models rank only modestly:
+    AUC ${VESSELS.map((v) => `${v} ${loc[v].toFixed(2)}`).join(", ")}. Most of an artery's score comes from detecting CAD at all,
+    because the data record ECG and wall-motion findings but not where in the heart they are.
+    Panel B's “If CAD is present” view shows the artery-level estimate on its own.</p>`;
 }
 
 // flowstate against the scores clinicians use today (clinical_baseline.py)
@@ -829,21 +896,22 @@ function renderClinical() {
   const rows = Object.entries(cb.methods).map(([name, m]) => `<tr${name === "flowstate" ? ' class="t2-ours"' : ""}>
     <td>${names[name] ?? name}</td>
     <td class="num">${m.auc.toFixed(2)} <span class="ci nowrap">(${m.auc_ci95[0].toFixed(2)}-${m.auc_ci95[1].toFixed(2)})</span></td>
-    <td class="num">${pct(m.specificity_at_flowstate_sensitivity)}</td></tr>`).join("");
+    <td class="num">${pct(m.specificity_at_90_sensitivity)}</td></tr>`).join("");
   const m = cb.methods, d = (k) => m[k].flowstate_auc_minus_this;
   const gain = (k) => `+${d(k)[0].toFixed(2)} (95% CI ${d(k)[1].toFixed(2)} to ${d(k)[2].toFixed(2)})`;
-  const esc = cb.esc_rule_ptp_over_15, ours = cb.flowstate_rule_out_cut_off;
+  const escRule = cb.esc_rule_ptp_over_15, ours = cb.flowstate_rule_out_cut_off;
   return `
     <h3 class="t2-sub">Against today's clinical scores</h3>
     <table class="booktabs">
       <thead><tr><th>Method</th><th>ROC-AUC (95% CI)</th><th>Specificity*</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="note">Same ${cb.n_patients} patients; flowstate uses held-out predictions. *At ${pct(cb.flowstate_sensitivity_used)} sensitivity, the share of
-      patients without CAD each method would spare an angiogram. AUC gain over ESC ${gain("ESC 2019 pre-test probability")},
+    <p class="note">Same ${cb.n_patients} patients; flowstate uses held-out predictions. *At ${pct(cb.sensitivity_target)} sensitivity, each method at its own
+      best cut-off: the share of patients without CAD it would spare an angiogram. AUC gain over ESC ${gain("ESC 2019 pre-test probability")},
       over CAD Consortium ${gain("CAD Consortium clinical score")}.</p>
-    <p class="note">The ESC rule (test when pre-test probability is above 15%) misses <b>${esc.missed_cad_patients}</b> CAD patients;
-      flowstate's cut-off misses <b>${ours.missed_cad_patients}</b> and still spares more patients without CAD (specificity ${pct(ours.specificity)} against ${pct(esc.specificity)}).
+    <p class="note">The ESC rule (test when pre-test probability is above 15%) misses <b>${escRule.missed_cad_patients}</b> CAD patients.
+      flowstate's rule-out cut-off, chosen inside the training folds, misses about <b>${Math.round(ours.missed_cad_patients)}</b> and still spares more
+      patients without CAD (specificity ${pct(ours.specificity)} against ${pct(escRule.specificity)}).
       flowstate has the highest net benefit on a decision curve from 10% to 85%, even with both scores recalibrated to these patients.</p>`;
 }
 

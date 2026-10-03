@@ -18,6 +18,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import sklearn
+from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
 
 from app.pipeline import (ENGINEERED, RARE_COLS, REDUNDANT_COLS, ROOT, VESSELS, add_clinical_features,
@@ -59,6 +60,7 @@ def main():
 
     # Vessels, trained on CAD patients only
     cad_idx = np.where(y_cath == 1)[0]
+    cond_oof = {}
     for v in VESSELS:
         yv = y[v].values
         cond_oof_raw = np.zeros(n)
@@ -66,7 +68,8 @@ def main():
             tr_cad = tr[y_cath[tr] == 1]
             cond_oof_raw[te] = make_rf().fit(Xf.iloc[tr_cad], yv[tr_cad]).predict_proba(Xf.iloc[te])[:, 1]
         platt_v = fit_platt(cond_oof_raw[cad_idx], yv[cad_idx])
-        heldout[v] = p_cad_oof * apply_platt(platt_v, cond_oof_raw)
+        cond_oof[v] = apply_platt(platt_v, cond_oof_raw)
+        heldout[v] = p_cad_oof * cond_oof[v]
         thresholds[v] = pick_threshold(v, yv, heldout[v])
         joblib.dump(make_rf().fit(Xf.iloc[cad_idx], yv[cad_idx]), MODELS / f"rf_cond_{v}.joblib")
         joblib.dump(platt_v, MODELS / f"platt_cond_{v}.joblib")
@@ -75,6 +78,22 @@ def main():
         print(f"  {t}: threshold {thr:.3f}")
     (MODELS / "heldout_predictions.json").write_text(json.dumps(
         [{t: round(float(heldout[t][i]), 4) for t in heldout} for i in range(n)]))
+
+    # The hard part: telling WHICH artery is narrowed. Held-out P(artery | CAD), ranked among CAD patients only
+    localisation_auc = {v: round(float(roc_auc_score(y[v].values[cad_idx], cond_oof[v][cad_idx])), 3) for v in VESSELS}
+    cad_vessel_rate = {v: round(float(y[v].values[cad_idx].mean()), 4) for v in VESSELS}
+    print("  artery-picking AUC among CAD patients:", localisation_auc)
+
+    # ROC and calibration curves of the held-out predictions, drawn in Table 2
+    curves = {}
+    for t, p in heldout.items():
+        yt = y[t].values
+        fpr, tpr, _ = roc_curve(yt, p)
+        fifths = np.array_split(np.argsort(p), 5)
+        curves[t] = {"auc": round(float(roc_auc_score(yt, p)), 3),
+                     "roc": [[round(float(a), 3), round(float(b), 3)] for a, b in zip(fpr, tpr)],
+                     "calibration": [[round(float(p[i].mean()), 3), round(float(yt[i].mean()), 3), int(len(i))]
+                                     for i in fifths]}
 
     # Everything the web form needs about each of the 55 raw inputs
     input_info = {}
@@ -109,6 +128,10 @@ def main():
         "evaluation": json.loads(EVALUATION.read_text()) if EVALUATION.exists() else None,
         "external_validation": json.loads(EXTERNAL.read_text()) if EXTERNAL.exists() else None,
         "clinical_baseline": json.loads(CLINICAL.read_text()) if CLINICAL.exists() else None,
+        "localisation_auc": localisation_auc,
+        "cad_vessel_rate": cad_vessel_rate,
+        "heldout_curves": {"note": "held-out predictions from one stratified 5-fold split (train.py)",
+                           "targets": curves},
     }
     (MODELS / "metadata.json").write_text(json.dumps(meta, indent=2))
     print("Saved models/ and models/metadata.json"

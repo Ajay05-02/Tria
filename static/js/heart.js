@@ -679,9 +679,10 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     for (const name of ["LAD", "LCX", "RCA"]) {
       vesselColor[name] = riskColor(next[name].score);
       const { div } = labels[name];
-      div.querySelector(".pct").textContent = `${Math.round(next[name].probability * 100)}%`;
+      const text = next[name].text ?? `${Math.round(next[name].probability * 100)}%`;
+      div.querySelector(".pct").textContent = text;
       div.querySelector(".sw").style.background = `#${vesselColor[name].getHexString()}`;
-      div.setAttribute("aria-label", `${name}: ${Math.round(next[name].probability * 100)}% predicted risk. Select this artery`);
+      div.setAttribute("aria-label", `${name}: ${text} predicted risk. Select this artery`);
       div.classList.toggle("high", next[name].high);
     }
     refreshVessels();
