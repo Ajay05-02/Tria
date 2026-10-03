@@ -24,7 +24,7 @@ Built for the **Multimodal AI Hackathon 2026, Track A: Cardiovascular Risk Visua
 ## What it does
 
 - **Predicts** overall CAD (≥50% narrowing in any coronary artery) and stenosis of the **LAD**, **LCX** and **RCA** from 55 demographic, symptom, ECG, echocardiography and laboratory inputs.
-- **Visualises** the result on a realistic 3D heart (Three.js, runs in any modern browser without a GPU):
+- **Visualises** the result on an anatomical 3D heart from the **NIH HuBMAP Human Reference Atlas** (Three.js, runs in any modern browser without a GPU; a procedural heart is kept as a fallback):
   - each coronary artery runs in its fat groove and is coloured green → ochre → red by its predicted risk. Ochre sits exactly at that artery's own decision cut-off, and the colour reaches full green 30 points below it and full red 30 points above it;
   - click an artery, its label, or its row in the results, and the camera turns to it, highlights the heart muscle it supplies, and the explanation switches to that artery;
   - the **Risk map** toggle colours every territory by its artery's risk;
@@ -157,6 +157,8 @@ train.py           trains and saves the final models (models/)
 evaluate.py        repeated nested cross-validation → reports/evaluation_v2.json
 external_validation.py  leave-one-hospital-out check on 5 hospitals → reports/external_validation.json
 static/            web app: index.html, css/, js/heart.js (3D scene), js/app.js (dashboard), logo.svg
+static/models/     heart.glb: the Human Reference Atlas heart with named LAD, LCX and RCA meshes (CC BY 4.0)
+tools/             build_heart_glb.py, which builds heart.glb from the atlas file
 data/raw/          the original dataset zips (UCI #411 Tehran, UCI #45 four hospitals)
 DESIGN.md          the design system: colours, type, layout and the rules behind them
 PRODUCT.md         who the app is for and the product principles the design follows
@@ -169,6 +171,7 @@ PRODUCT.md         who the app is for and the product principles the design foll
 - **CAD Consortium clinical model:** Genders T.S.S. et al., *BMJ* 2012;344:e3485.
 - **eGFR:** CKD-EPI 2021 creatinine equation, Inker L.A. et al., *NEJM* 2021.
 - **Libraries:** scikit-learn, SHAP, FastAPI, Three.js.
+- **3D heart:** HuBMAP Human Reference Atlas, 3D reference organ "heart-female" v1.0, created by Kristen Browne (NIH) from Visible Human Project data, licensed CC BY 4.0. `static/models/heart.glb` is derived from it (parts grouped, valves and small veins removed, vessels trimmed and capped, coronaries thickened, recoloured; see `static/models/LICENSE.txt`). Rebuild with `python tools/build_heart_glb.py VH_F_Heart.glb`.
 - **Design assets:** Public Sans typeface (SIL Open Font License), Phosphor icons (MIT).
 
 ## Limitations
@@ -178,7 +181,7 @@ PRODUCT.md         who the app is for and the product principles the design foll
 - **Percentages shift between hospitals.** Average predicted risk differs from the observed rate by up to 37 points across sites, so a new hospital should recalibrate before relying on the percentages.
 - **Older external data:** the UCI hospitals collected their patients in the 1980s; Tehran's cholesterol is a Friedewald estimate (LDL + HDL + TG/5).
 - **Vessel predictions reflect how extensive the disease is,** not its exact location: the inputs contain no ECG-lead or wall-segment information.
-- **The 3D heart is procedurally generated.** It is an illustrative anatomical model, not patient-specific imaging.
+- **The 3D heart is a reference anatomy** (one adult female from the Visible Human Project, left-dominant coronary tree), not patient-specific imaging. Each artery is coloured by its predicted risk along its whole length; the data say nothing about where along the artery a narrowing is.
 
 ## AI assistance
 

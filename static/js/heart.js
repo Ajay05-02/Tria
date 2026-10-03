@@ -1,4 +1,8 @@
-// flowstate: procedural heart, coronary arteries and torso rendered with Three.js.
+// flowstate: 3D heart, coronary arteries and torso rendered with Three.js.
+//
+// The anatomy comes from the HuBMAP Human Reference Atlas female heart v1.0 (CC BY 4.0, by Kristen Browne,
+// from Visible Human data), trimmed and capped into models/heart.glb by tools/build_heart_glb.py.
+// A procedural heart (below) is built first and shown only if that file cannot be loaded.
 //
 // Heart-local frame: +y points to the base (top), the apex is at the bottom.
 // theta is the angle around the long axis: 0 = anterior (+z), 90° = patient's left (+x),
@@ -8,6 +12,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const DEG = Math.PI / 180;
 const H = 1.25;          // half-height of the heart
@@ -205,6 +210,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
   const HOME = { pos: new THREE.Vector3(0.85, 0.85, 5.5), target: new THREE.Vector3(0.2, 0.45, 0) };
+  const viewDirs = { ...VIEW_DIRS };
   camera.position.copy(HOME.pos);
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -226,7 +232,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
   scene.add(rim);
 
   // Heart group: tilted so the apex points down, forward and to the patient's left
-  const heart = new THREE.Group();
+  let heart = new THREE.Group();
   heart.position.set(0.35, 0, 0);
   heart.rotation.set(-0.35, 0, 0.72);
   scene.add(heart);
@@ -254,9 +260,9 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
   g.deleteAttribute("uv");
   g = mergeVertices(g, 1e-5);
   const pos = g.attributes.position;
-  const nv = pos.count;
-  const baseColors = new Float32Array(nv * 3);
-  const terr = new Float32Array(nv * 3);
+  let nv = pos.count;
+  let baseColors = new Float32Array(nv * 3);
+  let terr = new Float32Array(nv * 3);
   // Real tissue colours: dark red myocardium, purplish atria, yellow epicardial fat in the grooves
   const MUSCLE_DARK = new THREE.Color("#3e0e11"), MUSCLE_LIGHT = new THREE.Color("#66201d");
   const ATRIUM = new THREE.Color("#43141f"), FAT = new THREE.Color("#ead6a8"), FAT_DEEP = new THREE.Color("#cdae74");
@@ -309,7 +315,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     roughness: 0.48, clearcoat: 0.45, clearcoatRoughness: 0.3, metalness: 0, envMapIntensity: 0.75,
     sheen: 0.2, sheenColor: new THREE.Color("#9c3328"), sheenRoughness: 0.5,
   };
-  const myocardium = new THREE.Mesh(g, new THREE.MeshPhysicalMaterial({ vertexColors: true, ...tissue }));
+  let myocardium = new THREE.Mesh(g, new THREE.MeshPhysicalMaterial({ vertexColors: true, ...tissue }));
   heart.add(myocardium);
 
   // --- atrial appendages: small, lobulated ear-shaped pouches at the base
@@ -343,11 +349,33 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
   const vesselMaterials = {};
   const vesselMeshes = [];
   const labels = {};
-  for (const [name, spec] of Object.entries(ARTERIES)) {
+  const arteryMaterial = () => new THREE.MeshPhysicalMaterial({
     // Not tone-mapped, so the rendered hue matches the label swatch and the panel B dot
-    const mat = new THREE.MeshPhysicalMaterial({
-      color: 0xa8807a, toneMapped: false, roughness: 0.35, clearcoat: 0.6, clearcoatRoughness: 0.25,
-    });
+    color: 0xa8807a, toneMapped: false, roughness: 0.35, clearcoat: 0.6, clearcoatRoughness: 0.25,
+  });
+  // Floating label with a leader line from the artery, as in an anatomy figure
+  function makeLabel(name, onArtery, anchorPos, normal, parent) {
+    const anchor = new THREE.Object3D();
+    anchor.position.copy(anchorPos);
+    anchor.userData.normal = normal;
+    parent.add(anchor);
+    const leader = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([onArtery, anchorPos.clone()]),
+      new THREE.LineBasicMaterial({ color: 0x14171c, transparent: true, opacity: 0.6 }),
+    );
+    parent.add(leader);
+    const div = document.createElement("button");
+    div.className = "vessel-label";
+    div.type = "button";
+    div.innerHTML = `<span class="sw"></span><b class="nm">${labelNames[name] ?? name}</b><span class="pct"></span>`;
+    div.setAttribute("aria-label", `${name}: select this artery`);
+    div.addEventListener("click", (e) => { e.stopPropagation(); select(name); onSelect?.(name); });
+    anchor.add(new CSS2DObject(div));
+    labels[name] = { anchor, div, leader };
+  }
+  let labelNames = {};
+  for (const [name, spec] of Object.entries(ARTERIES)) {
+    const mat = arteryMaterial();
     vesselMaterials[name] = mat;
     const main = surfaceTube(spec.main, spec.r[0], spec.r[1], mat);
     main.userData.vessel = name === "LM" ? null : name;
@@ -361,28 +389,11 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     }
     if (name !== "LM") {
       const q = main.userData.param.getPointAt(LABEL_AT[name]);
-      const anchor = new THREE.Object3D();
       const normal = surfaceNormal(q.x, q.y);
       const onArtery = surfacePoint(q.x, q.y).addScaledVector(normal, 0.05);
-      anchor.position.copy(onArtery).addScaledVector(normal, 0.62);
-      if (LABEL_NUDGE[name]) anchor.position.add(LABEL_NUDGE[name]);
-      anchor.userData.normal = normal;
-      heart.add(anchor);
-      // Leader line from the artery to its label, as in an anatomy figure
-      const leader = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([onArtery, anchor.position.clone()]),
-        new THREE.LineBasicMaterial({ color: 0x14171c, transparent: true, opacity: 0.6 }),
-      );
-      heart.add(leader);
-      const div = document.createElement("button");
-      div.className = "vessel-label";
-      div.type = "button";
-      div.innerHTML = `<span class="sw"></span><b class="nm">${name}</b><span class="pct"></span>`;
-      div.setAttribute("aria-label", `${name}: select this artery`);
-      div.addEventListener("click", (e) => { e.stopPropagation(); select(name); onSelect?.(name); });
-      const obj = new CSS2DObject(div);
-      anchor.add(obj);
-      labels[name] = { anchor, div, leader };
+      const anchorPos = onArtery.clone().addScaledVector(normal, 0.62);
+      if (LABEL_NUDGE[name]) anchorPos.add(LABEL_NUDGE[name]);
+      makeLabel(name, onArtery, anchorPos, normal, heart);
     }
   }
 
@@ -471,6 +482,153 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     torso.add(vert);
   }
 
+  // ---------------------------------------------------------------- anatomical heart (Human Reference Atlas)
+  // Hide the procedural heart while the anatomical one loads; show it only as a fallback.
+  heart.visible = false;
+  great.visible = false;
+  labelRenderer.domElement.style.visibility = "hidden";
+  let anatomyState = "loading";
+  const showFallback = () => {
+    if (anatomyState !== "loading") return;
+    anatomyState = "procedural";
+    heart.visible = true;
+    great.visible = true;
+    labelRenderer.domElement.style.visibility = "";
+  };
+  const fallbackTimer = setTimeout(showFallback, 10000);
+
+  function useAnatomy(model) {
+    if (anatomyState !== "loading") return;
+    anatomyState = "anatomical";
+    clearTimeout(fallbackTimer);
+    const part = (n) => model.getObjectByName(n);
+
+    // retire the procedural heart and its labels
+    for (const { div, anchor } of Object.values(labels)) { div.remove(); anchor.removeFromParent(); }
+    for (const k of Object.keys(labels)) delete labels[k];
+    scene.remove(heart);
+    scene.remove(great);
+    vesselMeshes.length = 0;
+
+    const anat = new THREE.Group();
+    scene.add(anat);
+    heart = anat;
+    torso.position.set(-1.13, 0, 0.03);    // the atlas heart sits left of the body midline (see build script)
+
+    // myocardium: baked tissue colour (sRGB) and coronary territory weights from the build script
+    const myo = part("myocardium");
+    const geo = myo.geometry;
+    geo.computeVertexNormals();
+    const tissueAttr = geo.getAttribute("_tissue");
+    nv = geo.getAttribute("position").count;
+    baseColors = new Float32Array(nv * 3);
+    const c = new THREE.Color();
+    for (let i = 0; i < nv; i++) {
+      c.setRGB(tissueAttr.getX(i), tissueAttr.getY(i), tissueAttr.getZ(i), THREE.SRGBColorSpace);
+      baseColors.set([c.r, c.g, c.b], i * 3);
+    }
+    terr = new Float32Array(geo.getAttribute("_territory").array);
+    geo.setAttribute("color", new THREE.BufferAttribute(baseColors.slice(), 3));
+    g = geo;
+    // Clean, glossy textbook finish (smooth colours are baked by the build script)
+    const gloss = {
+      roughness: 0.4, metalness: 0, clearcoat: 0.55, clearcoatRoughness: 0.24, envMapIntensity: 0.8,
+      sheen: 0.12, sheenColor: new THREE.Color("#ff9a9a"), sheenRoughness: 0.4,
+    };
+    myocardium = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ vertexColors: true, ...gloss }));
+    anat.add(myocardium);
+
+    // coronary arteries, coloured by risk
+    for (const name of ["LAD", "LCX", "RCA", "LM"]) {
+      const mat = arteryMaterial();
+      mat.side = THREE.DoubleSide;           // the capped vessel ends are fans of either winding
+      vesselMaterials[name] = mat;
+      const src = part(name);
+      src.geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(src.geometry, mat);
+      mesh.userData.vessel = name === "LM" ? null : name;
+      anat.add(mesh);
+      if (name !== "LM") vesselMeshes.push(mesh);
+    }
+
+    // great vessels and cardiac veins in textbook colours: oxygenated red, deoxygenated blue
+    const glossy = (color) => new THREE.MeshPhysicalMaterial({ color, ...gloss, sheen: 0 });
+    const RED_VESSEL = glossy(0x9e2626), BLUE_VESSEL = glossy(0x35579f), BLUE_VEIN = glossy(0x2a4689);
+    BLUE_VEIN.side = THREE.DoubleSide;
+    // cut vessel ends, drawn as a dark lumen like a textbook specimen
+    const LUMEN = new THREE.MeshStandardMaterial({ color: 0x2a0a0e, roughness: 0.7, side: THREE.DoubleSide });
+    for (const [name, mat] of [["aorta", RED_VESSEL], ["pulmonary", BLUE_VESSEL], ["pulmonary_veins", RED_VESSEL],
+      ["SVC", BLUE_VESSEL], ["IVC", BLUE_VESSEL], ["veins", BLUE_VEIN], ["caps", LUMEN]]) {
+      const src = part(name);
+      if (!src) continue;
+      src.geometry.computeVertexNormals();
+      anat.add(new THREE.Mesh(src.geometry, mat));
+    }
+
+    // labels and camera views from the real artery positions
+    const box = new THREE.Box3().setFromObject(myocardium);
+    const centre = box.getCenter(new THREE.Vector3());
+
+    // soft contact shadow under the apex (a blurred disc, no shadow maps: cheap on any laptop)
+    const shadowCanvas = Object.assign(document.createElement("canvas"), { width: 128, height: 128 });
+    const sg = shadowCanvas.getContext("2d");
+    const grad = sg.createRadialGradient(64, 64, 4, 64, 64, 64);
+    grad.addColorStop(0, "rgba(20,23,28,0.32)");
+    grad.addColorStop(1, "rgba(20,23,28,0)");
+    sg.fillStyle = grad;
+    sg.fillRect(0, 0, 128, 128);
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.7), new THREE.MeshBasicMaterial({
+      map: new THREE.CanvasTexture(shadowCanvas), transparent: true, depthWrite: false, toneMapped: false,
+    }));
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.set(centre.x, box.min.y - 0.12, centre.z);
+    scene.add(shadow);
+    const front = new THREE.Vector3(0, 0, 1);
+    // Each label keeps a fixed side of the figure (RCA left, LAD lower right, LCX upper right) and anchors on the
+    // visible point of its artery that lies furthest that way, so labels sit outside the heart's outline
+    const SIDE = {
+      RCA: new THREE.Vector3(-1, 0.15, 0).normalize(),
+      LAD: new THREE.Vector3(0.8, -0.6, 0).normalize(),
+      LCX: new THREE.Vector3(0.75, 0.65, 0).normalize(),
+    };
+    for (const name of ["LAD", "LCX", "RCA"]) {
+      const p = part(name).geometry.getAttribute("position");
+      const v = new THREE.Vector3(), mean = new THREE.Vector3(), best = new THREE.Vector3();
+      let bestScore = -Infinity;
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i);
+        mean.add(v);
+        const rel = v.clone().sub(centre);
+        // LAD and RCA: the visible front point furthest towards the label's side. LCX runs mostly behind the
+        // heart, so it uses its furthest up-and-out point (the lateral edge near the base) wherever it is.
+        if (name !== "LCX" && rel.z < -0.05) continue;
+        const score = rel.dot(SIDE[name]) + (name === "LCX" ? 0.15 : 0.4) * rel.z;
+        if (score > bestScore) { bestScore = score; best.copy(v); }
+      }
+      mean.divideScalar(p.count);
+      const out = SIDE[name].clone().add(new THREE.Vector3(0, 0, 0.25)).normalize();
+      // "facing" direction for the behind-the-heart check: mostly forward, a little towards the label's side
+      const facing = SIDE[name].clone().multiplyScalar(0.3).add(front).normalize();
+      makeLabel(name, best.clone(), best.clone().addScaledVector(out, 0.55), facing, anat);
+      viewDirs[name] = mean.clone().sub(centre).normalize().multiplyScalar(0.8).add(front.clone().multiplyScalar(0.35)).normalize();
+    }
+    HOME.pos.set(0.25, 0.7, 8.4);
+    HOME.target.copy(centre).add(new THREE.Vector3(0, 0.5, 0));
+    controls.target.copy(HOME.target);
+    camera.position.copy(HOME.pos);
+    labelRenderer.domElement.style.visibility = "";
+
+    // re-apply the current state to the new meshes
+    if (risks) setRisks(risks);
+    select(selected);
+    refreshVessels();
+  }
+
+  new GLTFLoader().load("models/heart.glb", (gltf) => useAnatomy(gltf.scene), undefined, (err) => {
+    console.warn("Anatomical heart not loaded, using the procedural heart.", err);
+    showFallback();
+  });
+
   // ---------------------------------------------------------------- state
   let risks = null;
   let selected = null;
@@ -540,7 +698,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     recolorMyocardium();
     if (name) {
       const dist = camera.position.distanceTo(controls.target);
-      const dir = VIEW_DIRS[name].clone().normalize();
+      const dir = viewDirs[name].clone().normalize();
       camTween = { from: camera.position.clone(), to: controls.target.clone().addScaledVector(dir, dist), t0: performance.now() };
       if (reduceMotion) camTween.t0 = -Infinity;
     }
@@ -642,6 +800,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     select,
     // Display names for the artery labels (plain-words mode)
     setLabelNames: (names) => {
+      labelNames = { ...names };
       for (const [n, { div }] of Object.entries(labels)) div.querySelector(".nm").textContent = names[n] ?? n;
     },
     // Still image of the current view, used for printing (WebGL canvases do not print reliably)

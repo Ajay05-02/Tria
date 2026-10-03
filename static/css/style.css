@@ -198,7 +198,11 @@ h2 { font-size: var(--t-md); font-weight: 700; letter-spacing: -0.005em; }
   padding: 14px 20px 0; max-width: 72ch; font-size: var(--t-sm); color: var(--ink-2); min-height: 3.6em;
 }
 .fig-caption b { color: var(--ink); font-weight: 750; }
-.heart-canvas { position: relative; flex: 1; min-height: 360px; }
+.heart-canvas {
+  position: relative; flex: 1; min-height: 360px;
+  /* soft studio backdrop: lit centre falling off to the paper tone */
+  background: radial-gradient(ellipse 60% 55% at 50% 45%, #ffffff 0%, #f4f5f2 55%, #e9ebe7 100%);
+}
 .plate-letter {
   position: absolute; z-index: 1; left: 20px; top: 12px; pointer-events: none;
   font-size: var(--t-xl); font-weight: 800; line-height: 1;

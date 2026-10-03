@@ -1,0 +1,9 @@
+heart.glb is derived from the HuBMAP Human Reference Atlas 3D reference organ "heart-female", version 1.0
+(VH_F_Heart.glb), created by Kristen Browne (NIH) from the Visible Human Project female data set.
+Source: https://cdn.humanatlas.io/digital-objects/ref-organ/heart-female/v1.0/assets/VH_F_Heart.glb
+Licence: Creative Commons Attribution 4.0 International (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
+
+Changes made with tools/build_heart_glb.py: parts grouped and renamed (myocardium, LAD, LCX, RCA, LM, aorta,
+pulmonary, pulmonary_veins, SVC, IVC, veins, caps); valves, papillary muscles and small cardiac veins removed;
+great vessels trimmed to short stumps and their open ends capped; coronary arteries thickened by 0.7 mm;
+smooth tissue colours and coronary territory weights added as vertex attributes; centred and rescaled.
