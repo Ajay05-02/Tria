@@ -6,7 +6,8 @@
 The two-step vessel model guarantees P(vessel) <= P(CAD), because a blocked artery means CAD.
 Honest performance estimates come from evaluate.py (repeated nested cross-validation),
 whose output reports/evaluation_v2.json is copied into models/metadata.json when present, together with
-reports/external_validation.json from external_validation.py (the five-hospital check of a basic-input model).
+reports/external_validation.json from external_validation.py (the five-hospital check of a basic-input model)
+and reports/clinical_baseline.json from clinical_baseline.py (flowstate against the ESC 2019 and CAD Consortium scores).
 
 Run:  python train.py   (about 20 seconds)
 """
@@ -26,6 +27,7 @@ PROCESSED = ROOT / "data" / "processed"
 MODELS = ROOT / "models"
 EVALUATION = ROOT / "reports" / "evaluation_v2.json"
 EXTERNAL = ROOT / "reports" / "external_validation.json"   # written by external_validation.py
+CLINICAL = ROOT / "reports" / "clinical_baseline.json"     # written by clinical_baseline.py
 
 
 def main():
@@ -106,6 +108,7 @@ def main():
         "versions": {"scikit-learn": sklearn.__version__, "pandas": pd.__version__, "numpy": np.__version__},
         "evaluation": json.loads(EVALUATION.read_text()) if EVALUATION.exists() else None,
         "external_validation": json.loads(EXTERNAL.read_text()) if EXTERNAL.exists() else None,
+        "clinical_baseline": json.loads(CLINICAL.read_text()) if CLINICAL.exists() else None,
     }
     (MODELS / "metadata.json").write_text(json.dumps(meta, indent=2))
     print("Saved models/ and models/metadata.json"

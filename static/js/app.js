@@ -818,7 +818,33 @@ function renderMetrics() {
     : `<p class="note">CAD at the rule-out cut-off: sensitivity <b>${pct(cath.sensitivity)}</b>, specificity <b>${pct(cath.specificity)}</b>,
       PPV ${pct(cath.ppv)}, NPV ${pct(cath.npv)}.</p>`}
     <p class="note">${state.meta.n_patients} patients. ${ev.protocol} AUC 0.5 is guessing, 1.0 is perfect; calibration slope near 1 means the percentages hold.
-    Artery risk = P(CAD) × P(artery | CAD), so it never exceeds CAD.</p>${renderExternal()}`;
+    Artery risk = P(CAD) × P(artery | CAD), so it never exceeds CAD.</p>${renderClinical()}${renderExternal()}`;
+}
+
+// flowstate against the scores clinicians use today (clinical_baseline.py)
+function renderClinical() {
+  const cb = state.meta.clinical_baseline;
+  if (!cb) return "";
+  const names = { "ESC 2019 pre-test probability": "ESC 2019 pre-test", "CAD Consortium clinical score": "CAD Consortium", flowstate: "flowstate" };
+  const rows = Object.entries(cb.methods).map(([name, m]) => `<tr${name === "flowstate" ? ' class="t2-ours"' : ""}>
+    <td>${names[name] ?? name}</td>
+    <td class="num">${m.auc.toFixed(2)} <span class="ci nowrap">(${m.auc_ci95[0].toFixed(2)}-${m.auc_ci95[1].toFixed(2)})</span></td>
+    <td class="num">${pct(m.specificity_at_flowstate_sensitivity)}</td></tr>`).join("");
+  const m = cb.methods, d = (k) => m[k].flowstate_auc_minus_this;
+  const gain = (k) => `+${d(k)[0].toFixed(2)} (95% CI ${d(k)[1].toFixed(2)} to ${d(k)[2].toFixed(2)})`;
+  const esc = cb.esc_rule_ptp_over_15, ours = cb.flowstate_rule_out_cut_off;
+  return `
+    <h3 class="t2-sub">Against today's clinical scores</h3>
+    <table class="booktabs">
+      <thead><tr><th>Method</th><th>ROC-AUC (95% CI)</th><th>Specificity*</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="note">Same ${cb.n_patients} patients; flowstate uses held-out predictions. *At ${pct(cb.flowstate_sensitivity_used)} sensitivity, the share of
+      patients without CAD each method would spare an angiogram. AUC gain over ESC ${gain("ESC 2019 pre-test probability")},
+      over CAD Consortium ${gain("CAD Consortium clinical score")}.</p>
+    <p class="note">The ESC rule (test when pre-test probability is above 15%) misses <b>${esc.missed_cad_patients}</b> CAD patients;
+      flowstate's cut-off misses <b>${ours.missed_cad_patients}</b> and still spares more patients without CAD (specificity ${pct(ours.specificity)} against ${pct(esc.specificity)}).
+      flowstate has the highest net benefit on a decision curve from 10% to 85%, even with both scores recalibrated to these patients.</p>`;
 }
 
 // Five-hospital check of a basic-input CAD model (external_validation.py)

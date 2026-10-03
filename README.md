@@ -61,6 +61,23 @@ At each model's own cut-off, chosen inside the training folds (CAD: catch at lea
 
 All numbers come from `python evaluate.py`, which saves them to `reports/evaluation_v2.json`.
 
+## Against the scores clinicians use today
+
+Before angiography, guidelines estimate risk from age, sex and the type of chest pain. We compared flowstate on the same 303 patients with the two standard scores: the **ESC 2019 pre-test probability** (Knuuti et al., *Eur Heart J* 2020, Table 5) and the **CAD Consortium clinical score** (Genders et al., *BMJ* 2012). flowstate's numbers are its held-out (cross-validated) predictions, so no patient was scored by a model that had seen them.
+
+| Method | ROC-AUC (95% CI) | Specificity at 94% sensitivity |
+|---|---|---|
+| ESC 2019 pre-test probability | 0.82 (0.77–0.87) | 37% |
+| CAD Consortium clinical score | 0.88 (0.83–0.92) | 63% |
+| **flowstate** | **0.93** (0.90–0.96) | **79%** |
+
+- **AUC gain:** +0.11 over ESC (paired bootstrap 95% CI 0.07 to 0.16) and +0.06 over CAD Consortium (0.03 to 0.08). Neither interval includes zero.
+- **Fewer missed patients:** the ESC rule "test when pre-test probability is above 15%" misses 53 of 216 CAD patients. flowstate's rule-out cut-off misses 14, and still spares more patients without CAD an angiogram (specificity 79% against 71%).
+- **Decision curve:** flowstate has the highest net benefit at every threshold from 10% to 85%, even after both scores are recalibrated to these patients by cross-validated logistic recalibration. Published scores were built for lower-risk populations, so recalibrating them makes the comparison fair to them.
+- **Why it wins:** the CAD Consortium score is one of flowstate's own inputs. The gain comes from what the scores leave out: ECG, echocardiography and laboratory results.
+
+Reproduce with `python clinical_baseline.py` (seconds), which writes `reports/clinical_baseline.json`. Table 2 in the app shows the same results.
+
 ## External validation: five hospitals, four countries
 
 Is the model tied to one hospital? To test this we added the **UCI Heart Disease** dataset: 920 real patients from Cleveland (USA), Budapest (Hungary), Zurich and Basel (Switzerland) and Long Beach (USA). They had coronary angiography with the same ≥50% narrowing rule. With Tehran that gives **1,223 patients from 5 hospitals**.
@@ -129,7 +146,8 @@ To reproduce the validation numbers (about 10–30 minutes):
 ```bash
 python evaluate.py               # internal validation (Tehran)
 python external_validation.py    # five-hospital check, under a minute
-python train.py                  # copies both reports into models/metadata.json
+python clinical_baseline.py      # against the ESC 2019 and CAD Consortium scores
+python train.py                  # copies the reports into models/metadata.json
 ```
 
 With Docker, which is also how the Hugging Face Space runs:
@@ -156,6 +174,7 @@ app/main.py        FastAPI server and prediction API
 train.py           trains and saves the final models (models/)
 evaluate.py        repeated nested cross-validation → reports/evaluation_v2.json
 external_validation.py  leave-one-hospital-out check on 5 hospitals → reports/external_validation.json
+clinical_baseline.py    flowstate against the ESC 2019 and CAD Consortium scores → reports/clinical_baseline.json
 static/            web app: index.html, css/, js/heart.js (3D scene), js/app.js (dashboard), logo.svg
 static/models/     heart.glb: the Human Reference Atlas heart with named LAD, LCX and RCA meshes (CC BY 4.0)
 tools/             build_heart_glb.py, which builds heart.glb from the atlas file

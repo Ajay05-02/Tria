@@ -93,6 +93,7 @@ META_RESPONSE = {
     "positive_rate": META["positive_rate"],
     "evaluation": META.get("evaluation"),
     "external_validation": META.get("external_validation"),
+    "clinical_baseline": META.get("clinical_baseline"),
     "structure": META["structure"],
     "patients": [{"index": int(i), "labels": {t: int(PATIENTS_Y.loc[i, t]) for t in PATIENTS_Y.columns}}
                  for i in range(len(PATIENTS_Y))],
