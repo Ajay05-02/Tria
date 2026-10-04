@@ -87,3 +87,32 @@ def test_heldout_predictions_match_reported_auc():
         auc = roc_auc_score(PATIENTS_Y[t], [r[t] for r in heldout])
         assert auc == pytest.approx(META["heldout_curves"]["targets"][t]["auc"], abs=1e-3)
     assert roc_auc_score(PATIENTS_Y["Cath"], [r["Cath"] for r in heldout]) > 0.9
+
+
+def form_control_ids():
+    """Ids of every row in Table 1: dropdown composites, chip groups and the remaining single inputs."""
+    from app.features import CHIP_GROUPS, COMPOSITES, HIDDEN_INPUTS
+    grouped = {f for g in COMPOSITES + CHIP_GROUPS for f in g["features"]}
+    singles = {k for k in META["inputs"] if k not in grouped and k not in HIDDEN_INPUTS}
+    return singles | {g["id"] for g in COMPOSITES + CHIP_GROUPS}
+
+
+@pytest.mark.parametrize("i", SAMPLE)
+def test_every_factor_opens_a_form_row(i):
+    ids = form_control_ids()
+    for ex in run(i)["explanations"].values():
+        for c in ex["contributions"]:
+            assert c["edit"] in ids or c["edit"] == "tab:Cath", c
+
+
+def test_key_inputs_are_form_rows_and_cover_the_clinical_score():
+    from app.features import KEY_INPUTS, input_columns
+    assert set(KEY_INPUTS) <= form_control_ids()
+    cadc_inputs = {"Age", "Sex", "Typical Chest Pain", "Atypical", "DM", "HTN", "DLP", "Current Smoker", "EX-Smoker"}
+    assert cadc_inputs <= set(input_columns(KEY_INPUTS))
+
+
+def test_key_inputs_give_nearly_full_accuracy():
+    sets = META["input_sets"]
+    assert sets["key"]["auc"] > sets["all"]["auc"] - 0.01
+    assert sets["questions"]["auc"] < sets["key"]["auc"]

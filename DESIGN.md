@@ -247,6 +247,9 @@ Quiet and editorial; blue is the action signal.
 - **Hover:** border darkens to a mid grey.
 - **Error:** out-of-range values turn the field border and label High Ink, with a High Wash fill when invalid.
 - **Read-only:** transparent, Grey Ink 2 (derived values such as BMI).
+- **Choice buttons:** yes/no findings and short lists (sex, smoking, chest pain type, wall-motion regions) are radio buttons drawn as joined Field White cells; the chosen cell fills Journal Blue with white 650 text. Rows with more than two choices stack under their label on an even grid (two per line when labels are long). "Select all that apply" findings (ECG signs) are separate chips with a "None" chip that clears them.
+- **Assumed vs entered:** for a new patient, a value the user has not entered yet is shown pale (Journal Blue Soft fill, or Grey Ink 3 numbers); entering or confirming it makes it solid. Example patients are always solid.
+- **Key inputs:** Table 1 opens with the 11 inputs that carry almost all of the accuracy, under an uppercase 12px 800 "Key inputs" head with a counter ("3 of 11 entered", Low Ink when complete). The rest sit under "More details" (optional, searchable, per-group "n entered" in Journal Blue).
 
 ### Tabs
 Text tabs on a rule: 13px semibold Grey Ink 3; hover inks the text and greys the underline; selected is Journal Blue with a 2px blue underline.

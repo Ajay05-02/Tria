@@ -21,6 +21,7 @@ import sklearn
 from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
 
+from app.features import FEATURES, KEY_INPUTS, QUESTION_INPUTS, input_columns
 from app.pipeline import (ENGINEERED, RARE_COLS, REDUNDANT_COLS, ROOT, VESSELS, add_clinical_features,
                           apply_platt, fit_platt, load_raw, make_rf, model_features, pick_threshold, preprocess)
 
@@ -29,6 +30,25 @@ MODELS = ROOT / "models"
 EVALUATION = ROOT / "reports" / "evaluation_v2.json"
 EXTERNAL = ROOT / "reports" / "external_validation.json"   # written by external_validation.py
 CLINICAL = ROOT / "reports" / "clinical_baseline.json"     # written by clinical_baseline.py
+
+
+def input_set_auc(X, y, features, keep, seeds=(100, 101, 102)):
+    """Held-out CAD AUC when only the `keep` columns are entered and every other input stays at the value the
+    blank form starts with (0 for yes/no findings, the study median otherwise), as for a new patient in the app."""
+    choice = {k for k, spec in FEATURES.items() if "options" in spec}
+    blank = {c: 0.0 if set(X[c].unique()) <= {0, 1} and c not in choice else float(X[c].median()) for c in X.columns}
+    aucs = []
+    for seed in seeds:
+        oof = np.zeros(len(X))
+        for tr, te in StratifiedKFold(n_splits=5, shuffle=True, random_state=seed).split(X, y):
+            model = make_rf().fit(add_clinical_features(X.iloc[tr])[features], y[tr])
+            test = X.iloc[te].copy()
+            for c in X.columns:
+                if c not in keep:
+                    test[c] = blank[c]
+            oof[te] = model.predict_proba(add_clinical_features(test)[features])[:, 1]
+        aucs.append(roc_auc_score(y, oof))
+    return round(float(np.mean(aucs)), 3)
 
 
 def main():
@@ -84,6 +104,16 @@ def main():
     cad_vessel_rate = {v: round(float(y[v].values[cad_idx].mean()), 4) for v in VESSELS}
     print("  artery-picking AUC among CAD patients:", localisation_auc)
 
+    # How much a user must enter: accuracy with only the key inputs (Table 1 asks for them first)
+    input_sets = {
+        "note": "held-out CAD ROC-AUC (3 x 5-fold CV) when only these inputs are entered; the rest stay at typical values",
+        "questions": {"items": len(QUESTION_INPUTS), "auc": input_set_auc(X, y_cath, features, input_columns(QUESTION_INPUTS))},
+        "key": {"items": len(KEY_INPUTS), "auc": input_set_auc(X, y_cath, features, input_columns(KEY_INPUTS))},
+        "all": {"auc": input_set_auc(X, y_cath, features, list(X.columns))},
+    }
+    print("  CAD AUC with only questions / key inputs / all:",
+          input_sets["questions"]["auc"], input_sets["key"]["auc"], input_sets["all"]["auc"])
+
     # ROC and calibration curves of the held-out predictions, drawn in Table 2
     curves = {}
     for t, p in heldout.items():
@@ -129,6 +159,7 @@ def main():
         "external_validation": json.loads(EXTERNAL.read_text()) if EXTERNAL.exists() else None,
         "clinical_baseline": json.loads(CLINICAL.read_text()) if CLINICAL.exists() else None,
         "localisation_auc": localisation_auc,
+        "input_sets": input_sets,
         "cad_vessel_rate": cad_vessel_rate,
         "heldout_curves": {"note": "held-out predictions from one stratified 5-fold split (train.py)",
                            "targets": curves},

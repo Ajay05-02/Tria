@@ -151,9 +151,9 @@
     "RCA": 0.3762
   },
   "thresholds": {
-    "Cath": 0.5496518827278799,
+    "Cath": 0.5496518827278801,
     "LAD": 0.6365405085073057,
-    "LCX": 0.3906414077228337,
+    "LCX": 0.39064140772283357,
     "RCA": 0.41870615592576416
   },
   "threshold_rules": {
@@ -1211,6 +1211,20 @@
     "LAD": 0.585,
     "LCX": 0.641,
     "RCA": 0.57
+  },
+  "input_sets": {
+    "note": "held-out CAD ROC-AUC (3 x 5-fold CV) when only these inputs are entered; the rest stay at typical values",
+    "questions": {
+      "items": 7,
+      "auc": 0.889
+    },
+    "key": {
+      "items": 11,
+      "auc": 0.93
+    },
+    "all": {
+      "auc": 0.933
+    }
   },
   "cad_vessel_rate": {
     "LAD": 0.8148,

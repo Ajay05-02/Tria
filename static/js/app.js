@@ -31,6 +31,8 @@ const state = {
   selectedVessel: null,
   patientLabel: "",
   mode: "risk",       // panel B and the heart: "risk" (each artery's risk) or "cond" (which artery, if CAD)
+  fromBlank: true,    // the form started blank (new patient), so untouched values are only assumed
+  touched: new Set(), // form ids the user has entered
 };
 let viewer;
 let predictTimer;
@@ -355,6 +357,9 @@ async function loadPatient(index) {
   state.patientLabel = `Example patient ${index + 1}`;
   state.example = { labels: data.labels, heldout: data.heldout };
   state.edited = false;
+  state.fromBlank = false;
+  state.touched = new Set();
+  clearFind();
   renderTruth();
   writeForm();
   predictNow();
@@ -368,98 +373,241 @@ function loadMedian() {
   state.patientLabel = "New patient";
   state.example = null;
   state.edited = false;
+  state.fromBlank = true;
+  state.touched = new Set();
+  clearFind();
   renderTruth();
   writeForm();
   predictNow();
 }
 
 // ---------------------------------------------------------------- Table 1 form
+// The key inputs come first: entered alone they give almost the full accuracy (train.py, "input_sets").
+// Everything else is grouped under "More details", optional, and starts at typical values.
+// Values a new patient has not been given yet look pale ("assumed"); entered values look solid.
+const controls = new Map();   // form id -> { row, sync } for every row of Table 1
+const domId = (id) => `f-${id.replace(/[^a-z0-9]+/gi, "-")}`;
+
 function buildForm() {
   const form = $("patient-form");
-  const composites = state.meta.composites;
-  const inComposite = new Set(composites.flatMap((c) => c.features));
-  const openGroups = new Set(["Demographics", "Symptoms", "ECG", "Echocardiography"]);
+  const meta = state.meta;
+  const fields = Object.fromEntries(meta.fields.map((f) => [f.key, f]));
+  const groups = Object.fromEntries([...meta.composites, ...meta.chip_groups].map((g) => [g.id, g]));
+  const make = (id) => (meta.chip_groups.some((g) => g.id === id) ? chipControl(groups[id])
+    : groups[id] ? compositeControl(groups[id]) : fieldControl(fields[id]));
+  const grouped = new Set(Object.values(groups).flatMap((g) => g.features));
+  const keyIds = meta.key_inputs;
 
-  for (const group of state.meta.groups) {
-    const fields = state.meta.fields.filter((f) => f.group === group && !inComposite.has(f.key));
-    const comps = composites.filter((c) => c.group === group);
-    if (!fields.length && !comps.length) continue;
+  const sets = meta.input_sets;
+  const key = Object.assign(document.createElement("section"), { className: "t1-block key-block" });
+  key.setAttribute("aria-labelledby", "key-title");
+  key.innerHTML = `
+    <div class="block-head"><h3 id="key-title">Key inputs</h3><span class="key-progress" id="key-progress"></span></div>
+    <p class="block-note">${sets ? `Entered alone, these ${keyIds.length} give almost the full accuracy: AUC ${sets.key.auc.toFixed(3)},
+      against ${sets.all.auc.toFixed(3)} with every input. ` : ""}Pale values are typical values, assumed until you enter your own.</p>`;
+  const keyBox = Object.assign(document.createElement("div"), { className: "fields" });
+  for (const id of keyIds) keyBox.append(make(id));
+  key.append(keyBox);
+
+  const more = Object.assign(document.createElement("section"), { className: "t1-block more-block" });
+  more.setAttribute("aria-labelledby", "more-title");
+  more.innerHTML = `
+    <div class="block-head"><h3 id="more-title">More details</h3><span>optional</span></div>
+    <input type="search" class="find" id="find-input" placeholder="Find an input" aria-label="Find an input by name" autocomplete="off">
+    <p class="find-empty" id="find-empty" hidden>No input matches.</p>`;
+  for (const group of meta.groups) {
+    const ids = [
+      ...Object.values(groups).filter((g) => g.group === group).map((g) => g.id),
+      ...meta.fields.filter((f) => f.group === group && !grouped.has(f.key)).map((f) => f.key),
+    ].filter((id) => !keyIds.includes(id));
+    if (!ids.length) continue;
     const det = document.createElement("details");
-    det.open = openGroups.has(group);
-    det.innerHTML = `<summary>${group}</summary>`;
-    const box = document.createElement("div");
-    box.className = "fields";
-
-    for (const c of comps) {
-      const row = document.createElement("label");
-      row.className = "field";
-      const sel = document.createElement("select");
-      sel.dataset.composite = c.id;
-      c.options.forEach((o, i) => sel.add(new Option(o.label, String(i))));
-      sel.addEventListener("change", () => {
-        c.options[Number(sel.value)].values.forEach((v, i) => { state.inputs[c.features[i]] = v; });
-        schedulePredict();
-      });
-      row.append(Object.assign(document.createElement("span"), { textContent: c.label }), sel);
-      box.append(row);
-    }
-
-    for (const f of fields) box.append(fieldControl(f));
+    det.dataset.group = group;
+    det.innerHTML = `<summary><span>${group}</span><span class="g-count"></span></summary>`;
+    const box = Object.assign(document.createElement("div"), { className: "fields" });
+    for (const id of ids) box.append(make(id));
     det.append(box);
-    form.append(det);
+    more.append(det);
   }
+  const clear = Object.assign(document.createElement("button"), { type: "button", className: "link-btn clear-btn", textContent: "Clear all values" });
+  clear.addEventListener("click", loadMedian);
+  more.append(clear);
+
+  form.append(key, more);
   form.addEventListener("submit", (e) => e.preventDefault());
+  $("find-input").addEventListener("input", (e) => applyFind(e.target.value));
+}
+
+// One row: the name (with its unit or a plain hint underneath) and its control. data-control is the id that
+// panel C's "click to edit" uses.
+function makeRow(id, label, note, stacked = false) {
+  const row = Object.assign(document.createElement("div"), { className: `field${stacked ? " stack" : ""}` });
+  row.dataset.control = id;
+  const name = Object.assign(document.createElement("span"), { className: "f-name", id: domId(id), textContent: label });
+  if (note) name.append(Object.assign(document.createElement("span"), { className: "unit", textContent: note }));
+  row.append(name);
+  return row;
+}
+
+const noteFor = (f) => (f.key === "BMI" ? `${f.unit}, from weight and height`
+  : f.key === "Weight" ? `${f.unit}, used for BMI` : [f.unit, f.hint].filter(Boolean).join(", "));
+
+// A row of buttons that work as radio buttons (arrow keys move the choice). Clicking the chosen button again
+// still counts as entering it, so "No" can be confirmed.
+function choiceButtons(id, labels, pick, isOn) {
+  const box = Object.assign(document.createElement("div"), { className: "opts" });
+  box.setAttribute("role", "radiogroup");
+  box.setAttribute("aria-labelledby", domId(id));
+  // stacked rows sit on an even grid: short labels in one line, long ones two per line
+  const longest = Math.max(...labels.map((t) => t.length));
+  box.style.setProperty("--cols", labels.length <= 3 || longest <= 4 ? labels.length : 2);
+  const inputs = labels.map((text, i) => {
+    const label = Object.assign(document.createElement("label"), { className: "opt" });
+    const input = Object.assign(document.createElement("input"), { type: "radio", name: domId(id), value: String(i) });
+    input.addEventListener("change", () => pick(i));
+    input.addEventListener("click", () => { if (input.checked) pick(i); });
+    label.append(input, Object.assign(document.createElement("span"), { textContent: text }));
+    box.append(label);
+    return input;
+  });
+  return { box, sync: () => inputs.forEach((input, i) => { input.checked = isOn(i); }) };
 }
 
 function fieldControl(f) {
-  if (f.kind === "binary") {
-    // A table cell that reads "Yes" or "No", edited with a checkbox
-    const row = document.createElement("label");
-    row.className = "field yn-row";
-    const input = Object.assign(document.createElement("input"), { type: "checkbox" });
-    input.dataset.key = f.key;
-    const text = Object.assign(document.createElement("span"), { className: "yn-text" });
-    input.addEventListener("change", () => {
-      state.inputs[f.key] = input.checked ? 1 : 0;
-      text.textContent = input.checked ? "Yes" : "No";
-      schedulePredict();
-    });
-    const cell = Object.assign(document.createElement("span"), { className: "yn" });
-    cell.append(input, text);
-    row.append(Object.assign(document.createElement("span"), { textContent: f.label }), cell);
-    return row;
-  }
-  const row = document.createElement("label");
-  row.className = "field";
-  const name = document.createElement("span");
-  name.textContent = f.label;
-  let note = f.unit;
-  if (f.key === "BMI") note = `${f.unit}, from weight and height`;
-  if (f.key === "Weight") note = `${f.unit}, used for BMI`;
-  if (note) name.append(Object.assign(document.createElement("span"), { className: "unit", textContent: note }));
+  if (f.kind === "number") return numberControl(f);
+  const values = f.kind === "binary" ? [0, 1] : Object.keys(f.options).map(Number);
+  const labels = f.kind === "binary" ? ["No", "Yes"] : Object.values(f.options);
+  const row = makeRow(f.key, f.label, noteFor(f), values.length > 2);
+  const { box, sync } = choiceButtons(f.key, labels, (i) => setInputs(f.key, { [f.key]: values[i] }),
+    (i) => Math.round(state.inputs[f.key]) === values[i]);
+  row.append(box);
+  controls.set(f.key, { row, sync });
+  return row;
+}
 
-  let control;
-  if (f.kind === "select") {
-    control = document.createElement("select");
-    for (const [value, label] of Object.entries(f.options)) control.add(new Option(label, value));
-  } else {
-    control = Object.assign(document.createElement("input"), { type: "number", step: String(f.step), inputMode: "decimal" });
-    control.title = `Range seen in training: ${f.min} to ${f.max}`;
-    if (f.key === "BMI") control.readOnly = true;
-  }
-  control.dataset.key = f.key;
-  control.addEventListener("input", () => {
-    const v = parseFloat(control.value);
+function compositeControl(c) {
+  const row = makeRow(c.id, c.label, c.hint, c.options.length > 2);
+  const { box, sync } = choiceButtons(c.id, c.options.map((o) => o.label),
+    (i) => setInputs(c.id, Object.fromEntries(c.features.map((k, j) => [k, c.options[i].values[j]]))),
+    (i) => c.options[i].values.every((v, j) => state.inputs[c.features[j]] === v));
+  row.append(box);
+  controls.set(c.id, { row, sync });
+  return row;
+}
+
+// "Select all that apply" buttons, plus "None", which clears them (or confirms that there are none)
+function chipControl(g) {
+  const row = makeRow(g.id, g.label, g.hint, true);
+  const box = Object.assign(document.createElement("div"), { className: "chips" });
+  box.setAttribute("role", "group");
+  box.setAttribute("aria-labelledby", domId(g.id));
+  const chip = (text) => {
+    const label = Object.assign(document.createElement("label"), { className: "chip" });
+    const input = Object.assign(document.createElement("input"), { type: "checkbox" });
+    label.append(input, Object.assign(document.createElement("span"), { textContent: text }));
+    box.append(label);
+    return input;
+  };
+  const none = chip("None");
+  none.addEventListener("change", () => setInputs(g.id, Object.fromEntries(g.features.map((k) => [k, 0]))));
+  const inputs = g.features.map((k, i) => {
+    const input = chip(g.labels[i]);
+    input.dataset.key = k;
+    input.addEventListener("change", () => setInputs(g.id, { [k]: input.checked ? 1 : 0 }));
+    return input;
+  });
+  row.append(box);
+  controls.set(g.id, {
+    row,
+    sync: () => {
+      inputs.forEach((input, i) => { input.checked = state.inputs[g.features[i]] === 1; });
+      none.checked = inputs.every((input) => !input.checked);
+    },
+  });
+  return row;
+}
+
+function numberControl(f) {
+  const row = makeRow(f.key, f.label, noteFor(f));
+  const input = Object.assign(document.createElement("input"), { type: "number", step: String(f.step), inputMode: "decimal" });
+  input.setAttribute("aria-labelledby", domId(f.key));
+  input.title = `Range seen in training: ${f.min} to ${f.max}`;
+  input.dataset.key = f.key;
+  if (f.key === "BMI") input.readOnly = true;
+  input.addEventListener("input", () => {
+    const v = parseFloat(input.value);
     const valid = Number.isFinite(v);
-    control.setAttribute("aria-invalid", String(!valid));
+    input.setAttribute("aria-invalid", String(!valid));
     if (!valid) return;
     state.inputs[f.key] = v;
     flagRange(row, f, v);
-    if (f.key === "Weight" || f.key === "Length") updateBMI();
+    if (f.key === "Weight" || f.key === "Length") { updateBMI(); markTouched("BMI"); }
+    markTouched(f.key);
     schedulePredict();
   });
-  row.append(name, control);
+  row.append(input);
+  controls.set(f.key, {
+    row,
+    sync: () => {
+      const v = state.inputs[f.key];
+      input.value = String(Math.round(v * 100) / 100);
+      input.removeAttribute("aria-invalid");
+      flagRange(row, f, v);
+    },
+  });
   return row;
+}
+
+function setInputs(id, values) {
+  Object.assign(state.inputs, values);
+  controls.get(id)?.sync();
+  markTouched(id);
+  schedulePredict();
+}
+
+function markTouched(id) {
+  if (state.touched.has(id)) return;
+  state.touched.add(id);
+  refreshTouched();
+}
+
+// Pale "assumed" rows, the key-input count and the per-group counts
+function refreshTouched() {
+  const blank = state.fromBlank;
+  for (const [id, { row }] of controls) row.classList.toggle("is-assumed", blank && !state.touched.has(id));
+  const keyIds = state.meta.key_inputs;
+  const done = keyIds.filter((id) => state.touched.has(id)).length;
+  const progress = $("key-progress");
+  progress.textContent = !blank ? "values from the study" : done === keyIds.length ? `all ${done} entered` : `${done} of ${keyIds.length} entered`;
+  progress.classList.toggle("done", blank && done === keyIds.length);
+  for (const det of document.querySelectorAll(".more-block details")) {
+    const n = [...det.querySelectorAll("[data-control]")].filter((r) => state.touched.has(r.dataset.control)).length;
+    det.querySelector(".g-count").textContent = blank && n ? `${n} entered` : "";
+  }
+}
+
+// "Find an input": filter the optional rows by name; a group name matches all of its rows
+function applyFind(query) {
+  const q = query.trim().toLowerCase();
+  let any = false;
+  for (const det of document.querySelectorAll(".more-block details")) {
+    const groupHit = det.dataset.group.toLowerCase().includes(q);
+    let hits = 0;
+    for (const row of det.querySelectorAll(".field")) {
+      const hit = !q || groupHit || row.querySelector(".f-name").textContent.toLowerCase().includes(q);
+      row.hidden = !hit;
+      hits += hit;
+    }
+    det.hidden = Boolean(q) && !hits;
+    if (q) det.open = hits > 0;
+    any ||= hits > 0;
+  }
+  $("find-empty").hidden = !q || any;
+}
+
+function clearFind() {
+  const input = $("find-input");
+  if (input.value) { input.value = ""; applyFind(""); }
 }
 
 function flagRange(row, f, v) {
@@ -477,24 +625,8 @@ function updateBMI() {
 }
 
 function writeForm() {
-  const fieldByKey = Object.fromEntries(state.meta.fields.map((f) => [f.key, f]));
-  for (const el of document.querySelectorAll("#patient-form [data-key]")) {
-    const v = state.inputs[el.dataset.key];
-    if (el.type === "checkbox") {
-      el.checked = v === 1;
-      el.nextElementSibling.textContent = el.checked ? "Yes" : "No";
-    }
-    else el.value = el.tagName === "SELECT" ? String(Math.round(v)) : String(Math.round(v * 100) / 100);
-    el.removeAttribute("aria-invalid");
-    const f = fieldByKey[el.dataset.key];
-    if (f && el.closest(".field")) flagRange(el.closest(".field"), f, v);
-  }
-  for (const c of state.meta.composites) {
-    const sel = document.querySelector(`[data-composite="${c.id}"]`);
-    const current = c.features.map((k) => state.inputs[k]);
-    const idx = c.options.findIndex((o) => o.values.every((v, i) => v === current[i]));
-    sel.value = String(Math.max(0, idx));
-  }
+  for (const { sync } of controls.values()) sync();
+  refreshTouched();
 }
 
 // ---------------------------------------------------------------- prediction
@@ -503,7 +635,7 @@ function renderTruth() {
   const truth = $("truth");
   truth.hidden = false;
   if (!state.example) {
-    truth.innerHTML = "Starts with typical measurements and no symptoms or findings. Enter your patient's values below, or choose an example patient from the study.";
+    truth.innerHTML = "Starts with typical values and no symptoms or findings. Fill in the key inputs below; everything else is optional. Or choose an example patient from the study.";
     return;
   }
   const { labels, heldout } = state.example;
@@ -773,22 +905,20 @@ function renderExplanation() {
 // "Overall CAD risk" switches to the CAD explanation instead
 function focusInput(edit) {
   if (edit.startsWith("tab:")) { $(`tab-${edit.slice(4)}`)?.click(); return; }
-  const el = document.querySelector(`#patient-form [data-key="${CSS.escape(edit)}"]`)
-    ?? document.querySelector(`[data-composite="${CSS.escape(edit)}"]`);
-  if (!el) return;
+  const row = document.querySelector(`#patient-form [data-control="${CSS.escape(edit)}"]`);
+  if (!row) return;
+  if (row.hidden) clearFind();
+  const el = row.querySelector("input:checked") ?? row.querySelector("input");
   if (window.matchMedia("(max-width: 1279px)").matches && !document.body.classList.contains("drawer-open")) {
     document.querySelector(".js-open-patient").click();
   }
-  const group = el.closest("details");
+  const group = row.closest("details");
   if (group) group.open = true;
-  el.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
-  el.focus({ preventScroll: true });
-  const row = el.closest(".field");
-  if (row) {
-    row.classList.remove("flash");
-    void row.offsetWidth;
-    row.classList.add("flash");
-  }
+  row.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+  el?.focus({ preventScroll: true });
+  row.classList.remove("flash");
+  void row.offsetWidth;
+  row.classList.add("flash");
 }
 document.addEventListener("click", (e) => {
   const row = e.target.closest(".bar-row[data-edit]");

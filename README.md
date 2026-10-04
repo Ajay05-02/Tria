@@ -33,7 +33,8 @@ Built for the **Multimodal AI Hackathon 2026, Track A: Cardiovascular Risk Visua
 - **Explains** every prediction with **SHAP** values in percentage points of the risk shown: the bars add up exactly to the difference between this patient and a typical study patient. Features that describe the same clinical fact are merged into one row (for example chest pain type), so nothing is counted twice. It also shows the "points" behind the published CAD Consortium risk score.
 - **Shows what it can and cannot localise:** panel B switches between each artery's risk and **"If CAD is present"**, which artery is most likely narrowed, compared with the average patient with CAD (see [Which artery?](#which-artery)).
 - **Updates in real time** (about 0.15 s per prediction) as you edit any value, and warns when an input is outside the range seen in training. Risks are shown as ">99%" or "<1%" at the extremes, never 100% or 0%.
-- **Starts as a blank form** (typical measurements, no symptoms or findings) for entering a new patient. The 303 study patients are available as examples; for each one the app also shows the **held-out prediction** from a model that never saw that patient, because the final model learned from all of them and is optimistic on them.
+- **Asks for 11 key inputs first.** A new patient starts from typical values; Table 1 puts the 11 inputs that carry almost all of the accuracy at the top (see [How much do you need to enter?](#how-much-do-you-need-to-enter)), as one-tap choice buttons, with a counter ("3 of 11 entered"). Values not entered yet look pale, so it is always clear what is assumed. The other ~40 inputs sit under "More details", optional and searchable.
+- **Starts as a blank form** for entering a new patient. The 303 study patients are available as examples; for each one the app also shows the **held-out prediction** from a model that never saw that patient, because the final model learned from all of them and is optimistic on them.
 - **Plain words** switch for patients and non-cardiologists, a first-visit guide, click-a-factor-to-edit, and **Save PDF**: a one-page A4 patient report (heart with risk-coloured arteries, probabilities against each cut-off, held-out predictions for study patients, top reasons, validation and credits), generated in the browser with jsPDF.
 
 ## Results (honest, leakage-free validation)
@@ -61,6 +62,18 @@ At each model's own cut-off, chosen inside the training folds (CAD: catch at lea
 - **Why the arteries score lower:** the dataset records ECG and wall-motion findings only as present/absent. It never says *which* leads or heart regions are affected, and that location information is what clinicians use to tell LCX from RCA disease.
 
 All numbers come from `python evaluate.py`, which saves them to `reports/evaluation_v2.json`. Table 2 in the app also draws the ROC curves and a calibration plot of the held-out predictions.
+
+### How much do you need to enter?
+
+Not all ~50 inputs. We measured the held-out CAD AUC when a user enters only some inputs and leaves the rest at the typical values the blank form starts with (3 × 5-fold cross-validation, `train.py`):
+
+| Entered | Inputs | CAD ROC-AUC |
+|---|---|---|
+| 7 questions, no tests needed | age, sex, chest pain type, diabetes, hypertension, high cholesterol, smoking | 0.889 |
+| **11 key inputs** | the 7 questions + ischaemic ECG signs, wall-motion abnormality, ejection fraction, fasting blood sugar | **0.930** |
+| Every input | all ~50 | 0.933 |
+
+So the 11 key inputs give almost the full accuracy, and Table 1 asks for them first. The four test results add a lot (0.889 → 0.930); the other ~40 inputs add almost nothing. The key inputs also cover every input of the CAD Consortium clinical score.
 
 ### Which artery?
 
@@ -145,9 +158,11 @@ Reproduce with `python external_validation.py` (under a minute; downloads UCI #4
 
 ## Run it locally
 
-Prerequisites: Python 3.11+ (tested on 3.13).
+Prerequisites: Python 3.11+ (tested on 3.13). Use a separate virtual environment: the saved models need scikit-learn 1.9.0, and other ML libraries (TabPFN, for example) install older versions that cannot load them.
 
 ```bash
+python -m venv .venv
+.venv\Scripts\activate              # Windows; on macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 python train.py                       # about 20 s: builds models/ and data/processed/
 python -m uvicorn app.main:app --port 8000

@@ -18,8 +18,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from app.features import (COMPOSITES, ENGINEERED_LABELS, EXPLAIN_GROUPS, FEATURES, GROUPS, HIDDEN_INPUTS,
-                          VESSELS as VESSEL_INFO)
+from app.features import (CHIP_GROUPS, COMPOSITES, ENGINEERED_LABELS, EXPLAIN_GROUPS, FEATURES, GROUPS,
+                          HIDDEN_INPUTS, KEY_INPUTS, VESSELS as VESSEL_INFO)
 from app.pipeline import ROOT, VESSELS, add_clinical_features, apply_platt
 
 MODELS = ROOT / "models"
@@ -169,7 +169,7 @@ def _form_fields():
         spec = FEATURES[key]
         info = META["input_info"][key]
         fields.append({
-            "key": key, "label": spec["label"], "unit": spec.get("unit", ""), "group": spec["group"],
+            "key": key, "label": spec["label"], "unit": spec.get("unit", ""), "hint": spec.get("hint", ""), "group": spec["group"],
             "kind": "select" if "options" in spec else info["kind"], "options": spec.get("options"),
             "step": spec.get("step", 1), "min": info["min"], "max": info["max"], "median": info["median"],
             "used_by_model": info["used_by_model"],
@@ -183,6 +183,9 @@ META_RESPONSE = {
     "groups": GROUPS,
     "fields": _form_fields(),
     "composites": COMPOSITES,
+    "chip_groups": CHIP_GROUPS,
+    "key_inputs": KEY_INPUTS,
+    "input_sets": META.get("input_sets"),
     "vessels": VESSEL_INFO,
     "thresholds": THRESHOLDS,
     "threshold_rules": META["threshold_rules"],

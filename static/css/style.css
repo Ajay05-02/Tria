@@ -164,8 +164,24 @@ h2 { font-size: var(--t-md); font-weight: 700; letter-spacing: -0.005em; }
 .truth .muted { color: var(--ink-3); }
 .drawer-close, .drawer-toggle, .scrim { display: none; }
 
-.t1 { border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); margin: 0 18px; }
-.t1 details + details { border-top: 1px solid var(--rule); }
+.t1 { margin: 0 18px; }
+.t1-block { border-top: 2px solid var(--ink); }
+.more-block { margin-top: 18px; border-bottom: 2px solid var(--ink); }
+.more-block details { border-top: 1px solid var(--rule); }
+.block-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 9px 0 2px; }
+.block-head h3 { font-size: var(--t-xs); font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+.block-head span { font-size: var(--t-xs); color: var(--ink-3); }
+.key-progress.done { color: var(--low-ink); font-weight: 650; }
+.block-note { margin: 0 0 12px; font-size: var(--t-xs); color: var(--ink-3); }
+.key-block .fields { gap: 10px; padding-bottom: 16px; }
+.find {
+  width: 100%; min-height: 32px; margin: 6px 0 8px; padding: 5px 9px; font-size: var(--t-sm);
+  background: var(--field); border: 1px solid var(--rule); border-radius: var(--r-control);
+}
+.find:hover { border-color: #9fa59c; }
+.find-empty { margin: 0 0 8px; font-size: var(--t-xs); color: var(--ink-3); }
+.g-count { margin-left: auto; margin-right: 10px; font-size: var(--t-xs); font-weight: 600; color: var(--accent); }
+.clear-btn { margin: 8px 0 10px; }
 .t1 summary {
   display: flex; justify-content: space-between; align-items: center;
   padding: 9px 0; cursor: pointer; list-style: none; font-weight: 650; font-size: var(--t-sm);
@@ -184,10 +200,34 @@ h2 { font-size: var(--t-md); font-weight: 700; letter-spacing: -0.005em; }
 .field .unit { display: block; color: var(--ink-3); font-size: var(--t-xs); }
 .field.out-of-range > span { color: var(--high-ink); }
 .field.out-of-range input { border-color: var(--high-ink); }
-.yn-row { cursor: pointer; min-height: 30px; }
-.yn { display: flex; align-items: center; gap: 8px; padding: 0 9px; }
-.yn-text { font-size: var(--t-sm); color: var(--ink-2); }
-.yn input:checked + .yn-text { color: var(--ink); font-weight: 650; }
+.field.stack { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+
+/* choice buttons (radio buttons underneath) and "select all that apply" chips (checkboxes underneath) */
+.opts { display: flex; background: var(--field); border: 1px solid var(--rule); border-radius: var(--r-control); }
+.opt, .chip { position: relative; display: flex; flex: 1 1 0; min-width: 0; }
+.opt input, .chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.opt span, .chip span {
+  flex: 1; display: grid; place-items: center; min-height: 32px; padding: 4px 8px;
+  font-size: var(--t-sm); line-height: 1.2; text-align: center; color: var(--ink-2); pointer-events: none;
+  transition: background-color 140ms var(--ease-out), color 140ms var(--ease-out);
+}
+.opt + .opt span { border-left: 1px solid var(--rule); }
+.opt:first-child span { border-radius: 3px 0 0 3px; }
+.opt:last-child span { border-radius: 0 3px 3px 0; }
+.opt:hover span, .chip:hover span { background: var(--accent-soft); color: var(--ink); }
+.opt input:checked + span, .chip input:checked + span { background: var(--accent); color: #fff; font-weight: 650; }
+.opt input:focus-visible + span, .chip input:focus-visible + span { box-shadow: inset 0 0 0 2px var(--ink); }
+/* a stacked row (more than two choices) wraps its buttons as separate cells */
+.stack .opts { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 4px; background: none; border: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { flex: 1 1 auto; }
+.stack .opt span, .chip span { background: var(--field); border: 1px solid var(--rule); border-radius: var(--r-control); }
+.stack .opt + .opt span { border-left: 1px solid var(--rule); }
+/* typical values a new patient has not been given yet look pale */
+.is-assumed .opt input:checked + span, .is-assumed .chip input:checked + span {
+  background: var(--accent-soft); color: var(--accent); font-weight: 600; border-color: #b9cadb;
+}
+.is-assumed input[type="number"] { color: var(--ink-3); }
 .table-note { margin: 10px 18px 18px; color: var(--ink-3); font-size: var(--t-xs); }
 
 /* ---------- Figure 1A: the heart */
@@ -463,7 +503,7 @@ h2 { font-size: var(--t-md); font-weight: 700; letter-spacing: -0.005em; }
 @media (pointer: coarse) {
   .btn, .icon-btn, select, input[type="number"], .tabs button { min-height: 44px; }
   .icon-btn { width: 44px; }
-  .check, .yn-row { min-height: 44px; }
+  .check, .opt span, .chip span, .find { min-height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
