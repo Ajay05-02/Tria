@@ -1,9 +1,7 @@
+# Generated automatically; rebuilt on every run, so never committed
 __pycache__/
 *.pyc
-.venv/
+.pytest_cache/
 .ipynb_checkpoints/
-data/processed/
-
-# Impeccable working files (review captures, decision-page logs); the design record stays in DESIGN.md
-.impeccable/questions/
-.impeccable/review/
+.venv/
+node_modules/
