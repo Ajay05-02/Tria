@@ -98,3 +98,6 @@ export interface Example {
 }
 
 export type Inputs = Record<string, number>
+
+// An artery as the results show it: overall risk against its cut-off, or P(artery | CAD) against the average CAD patient
+export type ArteryView = { probability: number; threshold: number; high: boolean }

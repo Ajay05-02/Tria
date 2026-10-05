@@ -1,83 +1,71 @@
+// flowstate: a guided assessment in the style of Kard (github.com/7-Bala/Kard, MIT).
+// Hero → 11 key questions (one per screen) → optional details → analyzing → results (risk ring, 3D heart, reasons)
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { TriangleAlert } from "lucide-react"
+import { AnimatePresence } from "framer-motion"
+import { AlertCircle } from "lucide-react"
 
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { HeartView, type ViewOption } from "@/components/HeartView"
-import { ModelTab } from "@/components/ModelTab"
-import { PatientForm } from "@/components/PatientForm"
-import { ResultPanel, type ArteryView } from "@/components/ResultPanel"
-import { cn } from "@/lib/utils"
+import type { ViewOption } from "@/components/HeartView"
+
+import { HeroScreen } from "@/components/flow/HeroScreen"
+import { Layout, type Screen } from "@/components/flow/Layout"
+import { QuestionScreen } from "@/components/flow/QuestionScreen"
+import { ResultsScreen } from "@/components/flow/ResultsScreen"
+import { AnalyzingScreen, DetailsScreen, InsightsScreen, LegalScreen } from "@/components/flow/Screens"
 import { pctRisk, riskScore, VESSELS } from "@/lib/format"
 import type { HeartViewer, VesselRisk } from "@/lib/heart.js"
 import { savePdf } from "@/lib/pdf"
-import type { Example, Inputs, Meta, Prediction, Target, Vessel } from "@/lib/types"
+import { QUESTIONS } from "@/lib/questions"
+import type { ArteryView, Example, Inputs, Meta, Prediction, Target, Vessel } from "@/lib/types"
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-const store = {
-  get: (k: string) => { try { return localStorage.getItem(k) } catch { return null } },
-  set: (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* private mode: keep defaults */ } },
-}
 
 // A new patient starts from typical values: study medians, and no symptoms or findings
 const blankInputs = (meta: Meta): Inputs =>
   Object.fromEntries(meta.fields.map((f) => [f.key, f.kind === "binary" ? 0 : f.median]))
 
+const predict = async (inputs: Inputs): Promise<Prediction> => {
+  const r = await fetch("api/predict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inputs }) })
+  if (!r.ok) throw new Error(`The server could not score this patient (error ${r.status}).`)
+  return r.json()
+}
+
 export default function App() {
   const [meta, setMeta] = useState<Meta | null>(null)
   const [inputs, setInputs] = useState<Inputs>({})
-  const [prediction, setPrediction] = useState<Prediction | null>(null)
+  const [touched, setTouched] = useState<Set<string>>(new Set())
   const [example, setExample] = useState<Example | null>(null)
   const [edited, setEdited] = useState(false)
-  const [touched, setTouched] = useState<Set<string>>(new Set())
+  const [prediction, setPrediction] = useState<Prediction | null>(null)
+  const [screen, setScreen] = useState<Screen>("hero")
+  const [back, setBack] = useState<Screen>("hero")        // where Insights / About / Privacy / Terms return to
+  const [qIndex, setQIndex] = useState(0)
+  const [direction, setDirection] = useState<1 | -1>(1)
+  const [fromResults, setFromResults] = useState(false)   // editing an answer from the results page
+  const [mode, setMode] = useState<"risk" | "cond">("risk")
   const [selected, setSelected] = useState<Vessel | null>(null)
   const [explain, setExplain] = useState<Target>("Cath")
-  const [mode, setMode] = useState<"risk" | "cond">("risk")
-  const [plain, setPlain] = useState(store.get("flowstate-plain") === "1")
   const [view, setView] = useState<ViewOption[]>(reduceMotion ? [] : ["beat"])
-  const [tab, setTab] = useState("patient")
   const [focus, setFocus] = useState<{ id: string; n: number } | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [slow, setSlow] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const viewerRef = useRef<HeartViewer | null>(null)
   const stageRef = useRef<HTMLDivElement | null>(null)
-  const requestId = useRef(0)
+  const inputsRef = useRef(inputs)
+  inputsRef.current = inputs
 
-  // ---- load the model description, then start with a blank patient
   useEffect(() => {
-    const t = setTimeout(() => setSlow(true), 2500)
     fetch("api/meta")
-      .then((r) => { if (!r.ok) throw new Error(`api/meta returned ${r.status}`); return r.json() })
+      .then((r) => { if (!r.ok) throw new Error(); return r.json() })
       .then((m: Meta) => { setMeta(m); setInputs(blankInputs(m)) })
       .catch(() => setError("The model could not be loaded. Check that the server is running, then reload the page."))
-      .finally(() => { clearTimeout(t); setSlow(false) })
-    return () => clearTimeout(t)
   }, [])
 
-  // ---- predict 180 ms after the last change; ignore answers to older requests
-  useEffect(() => {
-    if (!meta) return
-    const t = setTimeout(async () => {
-      const id = ++requestId.current
-      try {
-        const r = await fetch("api/predict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inputs }) })
-        if (id !== requestId.current) return
-        if (!r.ok) { setError(`The server could not score this patient (error ${r.status}). Check the values and try again.`); return }
-        setPrediction(await r.json())
-        setError(null)
-      } catch {
-        if (id === requestId.current) setError("Could not reach the server. Check that it is running, then edit any value to retry.")
-      }
-    }, 180)
-    return () => clearTimeout(t)
-  }, [inputs, meta])
+  useEffect(() => { window.scrollTo({ top: 0 }) }, [screen, qIndex])
 
-  const changeInputs = useCallback((id: string, values: Inputs) => {
+  const go = (s: Screen) => { if (!["insights", "about", "privacy", "terms"].includes(screen)) setBack(screen); setScreen(s) }
+
+  const change = useCallback((id: string, values: Inputs) => {
     setInputs((prev) => {
       const next = { ...prev, ...values }
       if (("Weight" in values || "Length" in values) && next.Weight > 0 && next.Length > 0) {
@@ -89,27 +77,63 @@ export default function App() {
     if (example) setEdited(true)
   }, [example])
 
-  const choosePatient = useCallback(async (value: string) => {
+  // Score the current answers, keeping the "Analyzing" screen up for at least 1.6 s (Kard's pacing)
+  const analyze = async () => {
+    setScreen("analyzing")
+    setFromResults(false)
+    try {
+      const [p] = await Promise.all([predict(inputsRef.current), new Promise((r) => setTimeout(r, reduceMotion ? 300 : 1600))])
+      setPrediction(p)
+      setError(null)
+      setScreen("results")
+    } catch (e) {
+      setError((e as Error).message || "Could not reach the server.")
+      setScreen(QUESTIONS.length ? "details" : "hero")
+    }
+  }
+
+  const start = () => {
     if (!meta) return
-    setEdited(false)
-    setTouched(new Set())
-    if (value === "new") { setExample(null); setInputs(blankInputs(meta)); return }
-    const r = await fetch(`api/patients/${value}`)
-    if (!r.ok) { setError(`Could not load example patient ${Number(value) + 1}.`); return }
+    setExample(null); setEdited(false); setTouched(new Set()); setInputs(blankInputs(meta))
+    setSelected(null); setExplain("Cath"); setMode("risk"); setFromResults(false)
+    setDirection(1); setQIndex(0); setScreen("question")
+  }
+
+  const openExample = async (index: number) => {
+    const r = await fetch(`api/patients/${index}`)
+    if (!r.ok) { setError(`Could not load example patient ${index + 1}.`); return }
     const d = await r.json()
     setExample({ index: d.index, labels: d.labels, heldout: d.heldout })
-    setInputs(d.inputs)
-  }, [meta])
+    setEdited(false); setTouched(new Set()); setInputs(d.inputs)
+    setSelected(null); setExplain("Cath"); setMode("risk")
+    inputsRef.current = d.inputs
+    await analyze()
+  }
 
-  const selectVessel = useCallback((v: Vessel | null) => { setSelected(v); setExplain(v ?? "Cath") }, [])
-  const chooseExplain = useCallback((t: Target) => { setExplain(t); setSelected(t === "Cath" ? null : t) }, [])
-  const editFactor = useCallback((edit: string) => {
-    if (edit.startsWith("tab:")) { chooseExplain("Cath"); return }
-    setTab("patient")
-    setFocus({ id: edit, n: Date.now() })
-  }, [chooseExplain])
+  const q = QUESTIONS[qIndex]
+  const answered = (i: number) => !!example || touched.has(QUESTIONS[i].id)
+  const next = () => {
+    if (qIndex < QUESTIONS.length - 1) { setDirection(1); setQIndex(qIndex + 1) } else setScreen("details")
+  }
+  const prev = () => { if (qIndex > 0) { setDirection(-1); setQIndex(qIndex - 1) } }
+  const jump = (i: number) => {
+    const firstOpen = QUESTIONS.findIndex((_, k) => !answered(k))
+    const target = Math.min(i, firstOpen === -1 ? QUESTIONS.length - 1 : firstOpen)
+    if (target !== qIndex) { setDirection(target > qIndex ? 1 : -1); setQIndex(target) }
+  }
 
-  // ---- what the arteries show: overall risk against the cut-off, or P(artery | CAD) against the average CAD patient
+  // "Click to edit" from the results: a key question opens its screen, anything else opens the optional details
+  const editFactor = (edit: string) => {
+    if (edit.startsWith("tab:")) { setExplain("Cath"); setSelected(null); return }
+    const k = QUESTIONS.findIndex((x) => x.id === edit)
+    setFromResults(true)
+    if (k >= 0) { setDirection(-1); setQIndex(k); setScreen("question") }
+    else { setFocus({ id: edit, n: Date.now() }); setScreen("details") }
+  }
+
+  const selectVessel = (v: Vessel | null) => { setSelected(v); setExplain(v ?? "Cath") }
+  const chooseExplain = (t: Target) => { setExplain(t); setSelected(t === "Cath" ? null : t) }
+
   const arteries = useMemo(() => {
     if (!prediction || !meta) return null
     return Object.fromEntries(VESSELS.map((v) => {
@@ -130,13 +154,13 @@ export default function App() {
   const patientLabel = example ? `Example patient ${example.index + 1}` : "New patient"
   const caption = meta && inputs.Age !== undefined
     ? `${patientLabel}, ${Math.round(inputs.Age)}-year-old ${inputs.Sex === 1 ? "man" : "woman"}${selected ? ` · ${meta.vessels[selected].full}: ${meta.vessels[selected].territory.toLowerCase()}` : ""}`
-    : slow ? "Waking up the model. On the free server the first load can take up to a minute." : "Loading"
+    : ""
 
   const makePdf = async () => {
     if (!meta || !prediction || !viewerRef.current || !stageRef.current) return
     setBusy(true)
     try {
-      await savePdf({ viewer: viewerRef.current, stage: stageRef.current, meta, prediction, inputs, patientLabel, example, edited, mode, plain })
+      await savePdf({ viewer: viewerRef.current, stage: stageRef.current, meta, prediction, inputs, patientLabel, example, edited, mode, plain: false })
     } catch (e) {
       setError(`${(e as Error).message} Use your browser's print menu to save a PDF instead.`)
     } finally {
@@ -146,66 +170,53 @@ export default function App() {
 
   return (
     <TooltipProvider>
-      <div className="flex min-h-svh flex-col bg-muted/40 xl:h-svh">
-        <header className="z-20 border-b bg-background">
-          <div className="flex h-14 items-center gap-4 px-4 lg:px-6">
-            <div className="flex items-center gap-2">
-              <img src="logo.svg" alt="" className="size-7" />
-              <span className="text-base font-semibold tracking-tight">flowstate</span>
-            </div>
-            <Tabs value={tab} onValueChange={setTab}>
-              <TabsList>
-                <TabsTrigger value="patient">Patient</TabsTrigger>
-                <TabsTrigger value="model">Model</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <div className="ml-auto flex items-center gap-2">
-              <Switch id="plain" checked={plain} onCheckedChange={(on) => { setPlain(on); store.set("flowstate-plain", on ? "1" : "0") }} />
-              <Label htmlFor="plain" className="text-sm font-normal">Plain words</Label>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 border-t bg-amber-50 px-4 py-1.5 text-xs text-amber-900 lg:px-6">
-            <TriangleAlert className="size-3.5 shrink-0" />
-            <span><span className="font-semibold">Educational prototype.</span> Not a medical device or a substitute for coronary angiography.</span>
-          </div>
-        </header>
-
+      <Layout screen={screen} total={QUESTIONS.length} current={qIndex} answered={answered}
+        onHome={() => setScreen("hero")} onJump={jump} onNavigate={go}>
         {error && (
-          <div className="px-4 pt-4 lg:px-6">
-            <Alert variant="destructive"><TriangleAlert /><AlertDescription>{error}</AlertDescription></Alert>
+          <div className="fixed top-20 left-1/2 z-50 w-full max-w-md -translate-x-1/2 px-4 animate-in fade-in slide-in-from-top-4">
+            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 shadow-sm">
+              <AlertCircle className="mt-0.5 size-5 shrink-0 text-red-500" />
+              <p className="flex-1 text-sm font-medium">{error}</p>
+              <button onClick={() => setError(null)} className="text-red-400 transition-colors hover:text-red-600" aria-label="Dismiss">&times;</button>
+            </div>
           </div>
         )}
 
-        {/* Patient tab (kept mounted so the 3D scene is not rebuilt when switching tabs) */}
-        <main className={cn("min-h-0 flex-1 gap-4 p-4 lg:p-6", tab === "patient" ? "grid grid-cols-[minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)_380px]" : "hidden")}>
-          <Card className="order-3 min-h-0 gap-0 py-0 xl:order-1">
-            <CardHeader className="border-b py-4"><CardTitle>Patient</CardTitle></CardHeader>
-            <CardContent className="min-h-0 flex-1 overflow-y-auto py-4">
-              {meta && (
-                <PatientForm meta={meta} inputs={inputs} touched={touched} fromBlank={!example} example={example} edited={edited}
-                  plain={plain} focus={focus} onChange={changeInputs} onPatient={choosePatient} />
-              )}
-            </CardContent>
-          </Card>
-          <div className="order-1 h-[58svh] min-h-0 xl:order-2 xl:h-auto">
-            <HeartView viewerRef={viewerRef} stageRef={stageRef} risks={risks} selected={selected} plain={plain}
-              bpm={inputs.PR ?? 70} view={view} caption={caption} mode={mode} busy={busy}
-              onView={setView} onSelect={selectVessel} onPdf={makePdf} />
-          </div>
-          <div className="order-2 min-h-0 xl:order-3 xl:overflow-y-auto">
-            {meta && prediction && arteries ? (
-              <ResultPanel meta={meta} prediction={prediction} plain={plain} mode={mode} selected={selected} explain={explain}
-                arteries={arteries} onMode={setMode} onSelect={selectVessel} onExplain={chooseExplain} onEdit={editFactor} />
-            ) : (
-              <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">{slow ? "Waking up the model…" : "Loading…"}</CardContent></Card>
-            )}
-          </div>
-        </main>
+        <AnimatePresence mode="wait" custom={direction}>
+          {screen === "hero" && <HeroScreen key="hero" meta={meta} onStart={start} onExample={openExample} />}
 
-        {tab === "model" && meta && (
-          <main className="flex-1 overflow-y-auto p-4 lg:p-6"><ModelTab meta={meta} /></main>
-        )}
-      </div>
+          {screen === "question" && meta && (
+            <QuestionScreen key={`q-${qIndex}`} question={q} index={qIndex} total={QUESTIONS.length} direction={direction}
+              inputs={inputs} entered={answered(qIndex)} field={q.kind === "number" ? meta.fields.find((f) => f.key === q.key) : undefined}
+              onAnswer={(values) => change(q.id, values)} onNext={next} onPrev={prev} onSkip={next}
+              onUpdate={fromResults ? analyze : undefined} />
+          )}
+
+          {screen === "details" && meta && (
+            <DetailsScreen key="details" meta={meta} inputs={inputs} touched={touched} fromBlank={!example} focus={focus}
+              onChange={change} onBack={() => { setDirection(-1); setQIndex(QUESTIONS.length - 1); setScreen("question") }} onDone={analyze} />
+          )}
+
+          {screen === "analyzing" && <AnalyzingScreen key="analyzing" />}
+
+          {screen === "results" && meta && prediction && arteries && (
+            <ResultsScreen key="results" meta={meta} prediction={prediction} example={example} edited={edited} arteries={arteries} risks={risks}
+              mode={mode} selected={selected} explain={explain} view={view} bpm={inputs.PR ?? 70} caption={caption} busy={busy}
+              viewerRef={viewerRef} stageRef={stageRef}
+              onMode={setMode} onSelect={selectVessel} onExplain={chooseExplain} onView={setView} onEdit={editFactor}
+              onEditAnswers={() => { setFromResults(true); setDirection(-1); setQIndex(0); setScreen("question") }}
+              onRetake={start} onPdf={makePdf} onInsights={() => go("insights")} />
+          )}
+
+          {screen === "insights" && meta && (
+            <InsightsScreen key="insights" meta={meta} onBack={() => setScreen(back)} backLabel={back === "results" ? "Back to results" : "Back"} />
+          )}
+
+          {(screen === "about" || screen === "privacy" || screen === "terms") && (
+            <LegalScreen key={screen} type={screen} onBack={() => setScreen(back)} />
+          )}
+        </AnimatePresence>
+      </Layout>
     </TooltipProvider>
   )
 }

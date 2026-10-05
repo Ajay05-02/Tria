@@ -27,9 +27,10 @@ interface Props {
   onView: (v: ViewOption[]) => void
   onSelect: (v: Vessel | null) => void
   onPdf: () => void
+  showPdf?: boolean
 }
 
-export function HeartView({ viewerRef, stageRef, risks, selected, plain, bpm, view, caption, mode, busy, onView, onSelect, onPdf }: Props) {
+export function HeartView({ viewerRef, stageRef, risks, selected, plain, bpm, view, caption, mode, busy, onView, onSelect, onPdf, showPdf = true }: Props) {
   const onSelectRef = useRef(onSelect)
   onSelectRef.current = onSelect
 
@@ -87,7 +88,7 @@ export function HeartView({ viewerRef, stageRef, risks, selected, plain, bpm, vi
             </TooltipTrigger>
             <TooltipContent>Reset view</TooltipContent>
           </Tooltip>
-          <Button size="sm" onClick={onPdf} disabled={busy}><FileDown /> {busy ? "Preparing" : "Save PDF"}</Button>
+          {showPdf && <Button size="sm" onClick={onPdf} disabled={busy}><FileDown /> {busy ? "Preparing" : "Save PDF"}</Button>}
         </div>
       </div>
     </Card>

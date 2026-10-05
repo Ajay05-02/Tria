@@ -1,136 +1,77 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Eraser, Search } from "lucide-react"
+import { Search } from "lucide-react"
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { cn } from "@/lib/utils"
-import { describeLabels, nameOf, pctRisk, TARGETS } from "@/lib/format"
-import type { ChoiceGroup, Example, Field, Inputs, Meta } from "@/lib/types"
+import type { ChoiceGroup, Field, Inputs, Meta } from "@/lib/types"
 
 interface Props {
   meta: Meta
   inputs: Inputs
   touched: Set<string>
   fromBlank: boolean
-  example: Example | null
-  edited: boolean
-  plain: boolean
   focus: { id: string; n: number } | null
   onChange: (id: string, values: Inputs) => void
-  onPatient: (value: string) => void
 }
 
-// One form row. `id` is the input (or grouped choice) that panel C's "click to edit" names.
+// One form row. `id` is the input (or grouped choice) that "click to edit" names.
 type Row = { id: string; kind: "field"; field: Field } | { id: string; kind: "choice"; group: ChoiceGroup } | { id: string; kind: "chips"; group: ChoiceGroup }
 
-export function PatientForm({ meta, inputs, touched, fromBlank, example, edited, plain, focus, onChange, onPatient }: Props) {
+// The optional inputs (everything except the 11 key questions): plain rows in searchable, collapsible groups
+export function OptionalInputs({ meta, inputs, touched, fromBlank, focus, onChange }: Props) {
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState<string[]>([])
   const root = useRef<HTMLDivElement>(null)
+  const groups = useMemo(() => buildRows(meta), [meta])
 
-  const { keyRows, groups } = useMemo(() => buildRows(meta), [meta])
-  const keyDone = meta.key_inputs.filter((id) => touched.has(id)).length
-
-  // "Click to edit" from panel C: open the right group, scroll to the row and flash it
+  // "Click to edit" from the results: open the right group, scroll to the row and flash it
   useEffect(() => {
     if (!focus) return
     const group = groups.find((g) => g.rows.some((r) => r.id === focus.id))
     if (group) { setQuery(""); setOpen((o) => (o.includes(group.name) ? o : [...o, group.name])) }
-    requestAnimationFrame(() => {
+    const t = setTimeout(() => {
       const row = root.current?.querySelector<HTMLElement>(`[data-control="${CSS.escape(focus.id)}"]`)
       if (!row) return
       row.scrollIntoView({ block: "center", behavior: "smooth" })
       row.querySelector<HTMLElement>("input, button[data-state=on], button")?.focus({ preventScroll: true })
       row.classList.remove("flash"); void row.offsetWidth; row.classList.add("flash")
-    })
+    }, 250)
+    return () => clearTimeout(t)
   }, [focus, groups])
 
   const q = query.trim().toLowerCase()
   const visible = (g: { name: string; rows: Row[] }) =>
     !q || g.name.toLowerCase().includes(q) ? g.rows : g.rows.filter((r) => rowLabel(r).toLowerCase().includes(q))
-  const shownGroups = groups.map((g) => ({ ...g, rows: visible(g) })).filter((g) => g.rows.length)
-
-  const renderRow = (r: Row) => (
-    <FormRow key={r.id} row={r} inputs={inputs} assumed={fromBlank && !touched.has(r.id)} onChange={onChange} />
-  )
+  const shown = groups.map((g) => ({ ...g, rows: visible(g) })).filter((g) => g.rows.length)
 
   return (
-    <div ref={root} className="flex flex-col gap-5">
-      <div className="flex flex-col gap-2">
-        <Select value={example ? String(example.index) : "new"} onValueChange={onPatient}>
-          <SelectTrigger className="w-full" aria-label="Patient"><SelectValue /></SelectTrigger>
-          <SelectContent className="max-h-80">
-            <SelectItem value="new">New patient</SelectItem>
-            <SelectSeparator />
-            <SelectGroup>
-              <SelectLabel>Example patients from the study</SelectLabel>
-              {meta.patients.map((p) => (
-                <SelectItem key={p.index} value={String(p.index)}>
-                  Example {p.index + 1}: {p.age}-year-old {p.sex === 1 ? "man" : "woman"}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        {example && (
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Angiography: <span className="font-medium text-foreground">{describeLabels(example.labels)}</span>.{" "}
-            {edited ? "Values edited, so this is now a new patient."
-              : example.heldout && <>Held-out prediction: {TARGETS.map((t) => `${nameOf(t, plain)} ${pctRisk(example.heldout![t])}`).join(" · ")}</>}
-          </p>
-        )}
+    <div ref={root} className="flex flex-col gap-2">
+      <div className="relative">
+        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a test or finding" className="h-10 rounded-xl bg-card pl-9" aria-label="Find an input" />
       </div>
-
-      <section className="flex flex-col gap-3" aria-labelledby="key-title">
-        <div className="flex items-center justify-between">
-          <h3 id="key-title" className="text-sm font-semibold">Key inputs</h3>
-          <Badge variant={fromBlank && keyDone === meta.key_inputs.length ? "default" : "secondary"}>
-            {fromBlank ? `${keyDone} / ${meta.key_inputs.length} entered` : "From the study"}
-          </Badge>
-        </div>
-        {fromBlank && (
-          <p className="-mt-1 text-xs text-muted-foreground">
-            {meta.input_sets && <>These {meta.key_inputs.length} give almost full accuracy (AUC {meta.input_sets.key.auc.toFixed(3)} vs {meta.input_sets.all.auc.toFixed(3)} with all). </>}
-            Faded values are typical defaults.
-          </p>
-        )}
-        <div className="flex flex-col gap-3">{keyRows.map(renderRow)}</div>
-      </section>
-
-      <section className="flex flex-col gap-2" aria-labelledby="more-title">
-        <div className="flex items-center justify-between">
-          <h3 id="more-title" className="text-sm font-semibold">More details</h3>
-          <span className="text-xs text-muted-foreground">optional</span>
-        </div>
-        <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find an input" className="h-8 pl-8" aria-label="Find an input" />
-        </div>
-        {shownGroups.length === 0 && <p className="text-xs text-muted-foreground">No input matches.</p>}
-        <Accordion type="multiple" value={q ? shownGroups.map((g) => g.name) : open} onValueChange={(v) => { if (!q) setOpen(v) }}>
-          {shownGroups.map((g) => {
-            const n = g.rows.filter((r) => touched.has(r.id)).length
-            return (
-              <AccordionItem key={g.name} value={g.name}>
-                <AccordionTrigger className="py-2.5 text-sm">
-                  <span className="flex flex-1 items-center justify-between pr-2">
-                    {g.name}
-                    {fromBlank && n > 0 && <span className="text-xs font-normal text-primary">{n} entered</span>}
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent className="flex flex-col gap-3 pb-3">{g.rows.map(renderRow)}</AccordionContent>
-              </AccordionItem>
-            )
-          })}
-        </Accordion>
-        <Button variant="ghost" size="sm" className="self-start text-muted-foreground" onClick={() => onPatient("new")}>
-          <Eraser /> Clear all values
-        </Button>
-      </section>
+      {shown.length === 0 && <p className="py-2 text-sm text-muted-foreground">Nothing matches.</p>}
+      <Accordion type="multiple" value={q ? shown.map((g) => g.name) : open} onValueChange={(v) => { if (!q) setOpen(v) }}
+        className="rounded-2xl border bg-card px-4">
+        {shown.map((g) => {
+          const n = g.rows.filter((r) => touched.has(r.id)).length
+          return (
+            <AccordionItem key={g.name} value={g.name}>
+              <AccordionTrigger className="py-3.5 text-sm font-medium">
+                <span className="flex flex-1 items-center justify-between pr-2">
+                  {g.name}
+                  {fromBlank && n > 0 && <span className="text-xs font-normal text-primary">{n} entered</span>}
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-3 pb-4">
+                {g.rows.map((r) => <FormRow key={r.id} row={r} inputs={inputs} assumed={fromBlank && !touched.has(r.id)} onChange={onChange} />)}
+              </AccordionContent>
+            </AccordionItem>
+          )
+        })}
+      </Accordion>
     </div>
   )
 }
@@ -146,15 +87,13 @@ function buildRows(meta: Meta) {
     if (choice) return { id, kind: "choice", group: choice }
     return { id, kind: "field", field: fields[id] }
   }
-  const keyRows = meta.key_inputs.map(make)
-  const groups = meta.groups.map((name) => ({
+  return meta.groups.map((name) => ({
     name,
     rows: [
       ...all.filter((g) => g.group === name).map((g) => g.id),
       ...meta.fields.filter((f) => f.group === name && !grouped.has(f.key)).map((f) => f.key),
     ].filter((id) => !meta.key_inputs.includes(id)).map(make),
   })).filter((g) => g.rows.length)
-  return { keyRows, groups }
 }
 
 const rowLabel = (r: Row) => (r.kind === "field" ? `${r.field.label} ${r.field.unit} ${r.field.hint}` : `${r.group.label} ${r.group.hint ?? ""}`)

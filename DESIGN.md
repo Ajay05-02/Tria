@@ -137,7 +137,7 @@ components:
     padding: "7px 24px"
 ---
 
-> **Note (2026-10-05):** the dashboard has been rebuilt with React and shadcn/ui (Nova preset, neutral colours, Geist font) in two tabs, Patient and Model. This file records the earlier "journal figure" design it replaced.
+> **Note (2026-10-05):** the interface has been rebuilt as a guided assessment adapted from Kard (github.com/7-Bala/Kard, MIT), with React and shadcn/ui. This file records the earlier "journal figure" design it replaced.
 
 
 # Design System: flowstate

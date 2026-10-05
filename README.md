@@ -29,11 +29,11 @@ Built for the **Multimodal AI Hackathon 2026, Track A: Cardiovascular Risk Visua
   - click an artery, its label, or its row in the results, and the camera turns to it, highlights the heart muscle it supplies, and the explanation switches to that artery;
   - the **Risk map** toggle colours every territory by its artery's risk;
   - there is an optional translucent torso and ribs for context, and the heart beats at the patient's pulse rate (off when the system asks for reduced motion).
-- **A clean two-tab dashboard** built with React, Tailwind CSS and **shadcn/ui**: the **Patient** tab holds the inputs, the 3D heart, the risk result and the main reasons; the **Model** tab holds the accuracy, ROC and calibration charts and the comparisons. Works on desktop, tablet and phone.
+- **A guided assessment** in the style of [Kard](https://github.com/7-Bala/Kard) (MIT): a landing page, then the 11 key questions one per screen (animated illustrations, choice cards, a number stepper, "Not sure? Use a typical value"), an optional page for the other ~40 inputs, and a results page with a risk ring, the 3D heart, the three arteries and the main reasons. A separate page shows how accurate the model is. Built with React, Tailwind CSS, shadcn/ui and framer-motion; works on desktop, tablet and phone.
 - **Explains** every prediction with **SHAP** values in percentage points of the risk shown: the bars add up exactly to the difference between this patient and a typical study patient. Features that describe the same clinical fact are merged into one row (for example chest pain type), so nothing is counted twice. It also shows the "points" behind the published CAD Consortium risk score.
-- **Shows what it can and cannot localise:** the Arteries card switches between each artery's risk and **"If CAD is present"**, which artery is most likely narrowed, compared with the average patient with CAD (see [Which artery?](#which-artery)).
+- **Shows what it can and cannot localise:** the results page switches between each artery's risk and **"If CAD is present"**, which artery is most likely narrowed, compared with the average patient with CAD (see [Which artery?](#which-artery)).
 - **Updates in real time** (about 0.15 s per prediction) as you edit any value, and warns when an input is outside the range seen in training. Risks are shown as ">99%" or "<1%" at the extremes, never 100% or 0%.
-- **Asks for 11 key inputs first.** A new patient starts from typical values; the Patient card puts the 11 inputs that carry almost all of the accuracy at the top (see [How much do you need to enter?](#how-much-do-you-need-to-enter)), as one-tap choice buttons, with a counter ("3 of 11 entered"). Values not entered yet look faded, so it is always clear what is assumed. The other ~40 inputs sit under "More details", optional and searchable.
+- **Asks only 11 questions.** A new patient starts from typical values; the assessment asks the 11 inputs that carry almost all of the accuracy (see [How much do you need to enter?](#how-much-do-you-need-to-enter)), with progress dots in the header. The other ~40 inputs are on one optional page, grouped and searchable. Clicking a reason on the results page opens that question, with "Update my results".
 - **Starts as a blank form** for entering a new patient. The 303 study patients are available as examples; for each one the app also shows the **held-out prediction** from a model that never saw that patient, because the final model learned from all of them and is optimistic on them.
 - **Plain words** switch for patients and non-cardiologists, click-a-factor-to-edit, and **Save PDF**: a one-page A4 patient report (heart with risk-coloured arteries, probabilities against each cut-off, held-out predictions for study patients, top reasons, validation and credits), generated in the browser with jsPDF.
 
@@ -61,7 +61,7 @@ At each model's own cut-off, chosen inside the training folds (CAD: catch at lea
 - **Improvement over our first model:** evaluated on the same splits, AUC rose on all four targets (+0.012 to +0.021). Calibration slopes also improved, from 1.3–2.2 (probabilities too timid) to about 1.0.
 - **Why the arteries score lower:** the dataset records ECG and wall-motion findings only as present/absent. It never says *which* leads or heart regions are affected, and that location information is what clinicians use to tell LCX from RCA disease.
 
-All numbers come from `python evaluate.py`, which saves them to `reports/evaluation_v2.json`. The Model tab also draws the ROC curves and a calibration plot of the held-out predictions.
+All numbers come from `python evaluate.py`, which saves them to `reports/evaluation_v2.json`. The accuracy page also draws the ROC curves and a calibration plot of the held-out predictions.
 
 ### How much do you need to enter?
 
@@ -73,7 +73,7 @@ Not all ~50 inputs. We measured the held-out CAD AUC when a user enters only som
 | **11 key inputs** | the 7 questions + ischaemic ECG signs, wall-motion abnormality, ejection fraction, fasting blood sugar | **0.930** |
 | Every input | all ~50 | 0.933 |
 
-So the 11 key inputs give almost the full accuracy, and the Patient card asks for them first. The four test results add a lot (0.889 → 0.930); the other ~40 inputs add almost nothing. The key inputs also cover every input of the CAD Consortium clinical score.
+So the 11 key inputs give almost the full accuracy, and the assessment asks only these. The four test results add a lot (0.889 → 0.930); the other ~40 inputs add almost nothing. The key inputs also cover every input of the CAD Consortium clinical score.
 
 ### Which artery?
 
@@ -83,7 +83,7 @@ The artery AUCs above are measured over all 303 patients, so they include tellin
 |---|---|---|---|
 | ROC-AUC of P(artery \| CAD), held out | 0.58 | 0.64 | 0.57 |
 
-That is only modestly better than guessing (0.5), and predicting single- against multi-vessel disease is no better (AUC 0.55). The cause is the data, not the model: ECG and wall-motion findings are recorded as present/absent, never with their location. So **most of an artery's colour on the heart reflects the overall CAD risk**. The app says so in the Model tab, and the Arteries card's "If CAD is present" view shows the artery-level estimate on its own, so viewers can see how much the arteries really differ for a given patient.
+That is only modestly better than guessing (0.5), and predicting single- against multi-vessel disease is no better (AUC 0.55). The cause is the data, not the model: ECG and wall-motion findings are recorded as present/absent, never with their location. So **most of an artery's colour on the heart reflects the overall CAD risk**. The app says so on its accuracy page, and the results page's "If CAD is present" view shows the artery-level estimate on its own, so viewers can see how much the arteries really differ for a given patient.
 
 ## Against the scores clinicians use today
 
@@ -102,7 +102,7 @@ Before angiography, guidelines estimate risk from age, sex and the type of chest
 - **Decision curve:** flowstate has the highest net benefit at every threshold from 10% to 85%, even after both scores are recalibrated to these patients by cross-validated logistic recalibration. Published scores were built for lower-risk populations, so recalibrating them makes the comparison fair to them.
 - **Why it wins:** the CAD Consortium score is one of flowstate's own inputs. The gain comes from what the scores leave out: ECG, echocardiography and laboratory results.
 
-Reproduce with `python clinical_baseline.py` (seconds), which writes `reports/clinical_baseline.json`. The Model tab shows the same results.
+Reproduce with `python clinical_baseline.py` (seconds), which writes `reports/clinical_baseline.json`. The accuracy page in the app shows the same results.
 
 ## External validation: five hospitals, four countries
 
@@ -136,7 +136,7 @@ ROC-AUC on the held-out hospital, with 95% bootstrap intervals for the chosen mo
 
 4. **Percentages need local recalibration.** Ranking holds across hospitals, but average predicted risk does not: 35% predicted vs 71% actual for Tehran, 48% vs 36% for Budapest. Each hospital refers a different mix of patients, so a new site should recalibrate (as the full model does with Platt scaling) before trusting the percentages.
 
-Reproduce with `python external_validation.py` (under a minute; downloads UCI #45 into `data/raw/` if missing), which writes `reports/external_validation.json`. The Model tab shows the same results.
+Reproduce with `python external_validation.py` (under a minute; downloads UCI #45 into `data/raw/` if missing), which writes `reports/external_validation.json`. The accuracy page in the app shows the same results.
 
 ## How the model works
 
@@ -236,7 +236,8 @@ PRODUCT.md         who the app is for and the product principles the design foll
 - **External validation dataset:** Heart Disease, UCI Machine Learning Repository #45 (CC BY 4.0): Cleveland Clinic Foundation (R. Detrano), Hungarian Institute of Cardiology, Budapest (A. Janosi), University Hospitals Zurich and Basel (W. Steinbrunn, M. Pfisterer), V.A. Medical Center, Long Beach (R. Detrano).
 - **CAD Consortium clinical model:** Genders T.S.S. et al., *BMJ* 2012;344:e3485.
 - **eGFR:** CKD-EPI 2021 creatinine equation, Inker L.A. et al., *NEJM* 2021.
-- **Libraries:** scikit-learn, SHAP, FastAPI, React, Tailwind CSS, shadcn/ui (Radix UI), Three.js, jsPDF.
+- **Libraries:** scikit-learn, SHAP, FastAPI, React, Tailwind CSS, shadcn/ui (Radix UI), framer-motion, Three.js, jsPDF.
+- **Interface design:** adapted from [Kard](https://github.com/7-Bala/Kard) by 7-Bala (MIT License): layout, colours, Fraunces and DM Sans type, the question flow and its animated illustrations (`web/src/components/kard/`, licence in `KARD-LICENSE.txt`). The smoking, wall-motion and ejection-fraction illustrations were added in the same style.
 - **3D heart:** HuBMAP Human Reference Atlas, 3D reference organ "heart-female" v1.0, created by Kristen Browne (NIH) from Visible Human Project data, licensed CC BY 4.0. `web/public/models/heart.glb` (copied into `static/models/` by the build) is derived from it (parts grouped, valves and small veins removed, vessels trimmed and capped, coronaries thickened, recoloured; see `web/public/models/LICENSE.txt`). Rebuild with `python tools/build_heart_glb.py VH_F_Heart.glb`.
 - **Design assets:** Public Sans typeface (SIL Open Font License), Phosphor icons (MIT).
 
@@ -253,7 +254,7 @@ PRODUCT.md         who the app is for and the product principles the design foll
 
 This project was developed with the help of an AI coding assistant, **Claude Code (Claude by Anthropic)**, used for research, code generation and review. All modelling decisions were pre-registered and validated as described above.
 
-The current interface was rebuilt with Claude Code using **[shadcn/ui](https://ui.shadcn.com/)** components (Nova preset, neutral palette, Geist font). The earlier version was designed with three open-source design skills:
+The current interface was rebuilt with Claude Code as an adaptation of the open-source [Kard](https://github.com/7-Bala/Kard) interface (MIT), using **[shadcn/ui](https://ui.shadcn.com/)** components. The earlier version was designed with three open-source design skills:
 
 - **[Impeccable](https://impeccable.style/)** (`pbakaus/impeccable`): product brief, design direction, an independent finish review of the built interface, and the design record in `DESIGN.md`;
 - **[UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)**: healthcare design and accessibility guidance (contrast, keyboard focus, reduced motion, touch targets);
