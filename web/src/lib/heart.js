@@ -624,7 +624,8 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     refreshVessels();
   }
 
-  new GLTFLoader().load("models/heart.glb", (gltf) => useAnatomy(gltf.scene), undefined, (err) => {
+  let disposed = false;
+  new GLTFLoader().load("models/heart.glb", (gltf) => { if (!disposed) useAnatomy(gltf.scene); }, undefined, (err) => {
     console.warn("Anatomical heart not loaded, using the procedural heart.", err);
     showFallback();
   });
@@ -744,7 +745,8 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     camera.fov = camera.aspect < 1.1 ? Math.min(62, 38 * (1.1 / camera.aspect)) : 38;
     camera.updateProjectionMatrix();
   }
-  new ResizeObserver(resize).observe(container);
+  const sizeWatch = new ResizeObserver(resize);
+  sizeWatch.observe(container);
   resize();
 
   const clock = new THREE.Clock();
@@ -818,6 +820,17 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     setBeating: (on) => { beating = on; },
     setTorso: (on) => { torso.visible = on; },
     setTerritories: (on) => { showTerritories = on; recolorMyocardium(); },
+    // Stop rendering and remove the canvas and labels (React unmounts the viewer this way)
+    dispose: () => {
+      disposed = true;
+      clearTimeout(fallbackTimer);
+      renderer.setAnimationLoop(null);
+      sizeWatch.disconnect();
+      controls.dispose();
+      renderer.dispose();
+      renderer.domElement.remove();
+      labelRenderer.domElement.remove();
+    },
     resetView: () => {
       camTween = { from: camera.position.clone(), to: HOME.pos.clone(), t0: reduceMotion ? -Infinity : performance.now() };
       controls.target.copy(HOME.target);
