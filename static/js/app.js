@@ -206,7 +206,7 @@ async function savePdf() {
     doc.setDrawColor(...ink).setLineWidth(0.6).line(M, 20, W - M, 20);
     doc.setFillColor(247, 236, 210).rect(M, 22.5, W - 2 * M, 7, "F");
     doc.setFontSize(8.5).setTextColor(122, 75, 0).text(
-      "Educational prototype. Not a medical device or a substitute for coronary angiography. Trained on 303 patients from one centre in Tehran.",
+      "Educational prototype. Not a medical device or a substitute for coronary angiography.",
       M + 3, 27);
 
     // patient line

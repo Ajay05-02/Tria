@@ -40,7 +40,7 @@ flowstate predicts overall coronary artery disease (CAD, ≥50% stenosis) and pe
 
 - Name: **flowstate** (lowercase; formerly CardioVision 3D). It names coronary blood flow, which stenosis restricts, and the "flow state" of focus. Tagline: "check your heart's flow state".
 - Voice: plain, specific, honest about limits. No hype.
-- The educational-prototype disclaimer must stay visible: not a medical device, not a substitute for angiography, trained on 303 patients from one centre in Tehran.
+- The educational-prototype disclaimer must stay visible: not a medical device, not a substitute for angiography. (The training-data limits live in Table 2 and the README.)
 
 ## Evidence on Hand
 
