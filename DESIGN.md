@@ -137,7 +137,7 @@ components:
     padding: "7px 24px"
 ---
 
-> **Note (2026-10-05):** the interface has been rebuilt as a guided assessment adapted from Kard (github.com/7-Bala/Kard, MIT), with React and shadcn/ui. This file records the earlier "journal figure" design it replaced.
+> **Note (2026-10-05):** the interface has been rebuilt as a guided assessment on Kard's question flow (github.com/7-Bala/Kard, MIT), with React and shadcn/ui, Geist type and a neutral palette with one rose accent; see docs/ai-look-audit.md. This file records the earlier "journal figure" design it replaced.
 
 
 # Design System: flowstate

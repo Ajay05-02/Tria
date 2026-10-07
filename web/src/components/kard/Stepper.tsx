@@ -97,8 +97,8 @@ export function Stepper({
   };
 
   return (
-    <div className="relative flex flex-col items-center gap-5">
-      <div className="flex items-center justify-between w-full max-w-xs bg-card border border-border rounded-3xl px-4 py-5 shadow-sm">
+    <div className="relative flex flex-col items-start gap-5">
+      <div className="flex items-center justify-between w-full max-w-xs bg-card border border-border rounded-2xl px-4 py-5">
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
@@ -117,7 +117,7 @@ export function Stepper({
             onChange={handleInputChange}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="font-serif text-6xl font-bold text-foreground tabular-nums leading-none text-center bg-transparent border-none focus:outline-none w-32 caret-primary"
+            className="text-6xl font-semibold tracking-tight text-foreground tabular-nums leading-none text-center bg-transparent border-none focus:outline-none w-32 caret-primary"
             aria-label={`Current ${unit} value`}
           />
           <span className="text-sm text-muted-foreground mt-1.5">{unit}</span>
@@ -133,7 +133,7 @@ export function Stepper({
           +
         </button>
       </div>
-      <div className="absolute -bottom-12 flex justify-center items-center w-full">
+      <div className="absolute -bottom-12 flex items-center w-full max-w-xs justify-center">
         <AnimatePresence>
           {errorMsg && (
             <motion.div
@@ -148,7 +148,7 @@ export function Stepper({
                 y: -10, 
                 transition: { type: "tween", ease: "anticipate", duration: 0.35 } 
               }}
-              className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-md whitespace-nowrap"
+              className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-md whitespace-nowrap"
             >
               <AlertCircle className="w-4 h-4" />
               {errorMsg}

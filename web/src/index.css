@@ -1,16 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/dm-sans";
-@import "@fontsource-variable/fraunces";
-@import "@fontsource-variable/fraunces/wght-italic.css";
+@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-serif);
-    --font-sans: 'DM Sans Variable', system-ui, sans-serif;
-    --font-serif: 'Fraunces Variable', Georgia, serif;
+    --font-sans: 'Geist Variable', system-ui, sans-serif;
+    --font-serif: var(--font-sans);
     --color-risk-low: var(--risk-low);
     --color-risk-med: var(--risk-med);
     --color-risk-high: var(--risk-high);
@@ -54,43 +52,43 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Kard palette (github.com/7-Bala/Kard, MIT): warm paper, ink and a rose accent */
+/* Neutral surfaces, one rose accent (kept below 70% saturation), risk colours for data only */
 :root {
-    --background: hsl(40 50% 96%);
-    --foreground: hsl(20 7% 10%);
-    --card: hsl(40 100% 99%);
-    --card-foreground: hsl(20 7% 10%);
-    --popover: hsl(40 100% 99%);
-    --popover-foreground: hsl(20 7% 10%);
-    --primary: hsl(344 83% 50%);
-    --primary-foreground: hsl(40 100% 99%);
-    --secondary: hsl(40 20% 90%);
-    --secondary-foreground: hsl(20 7% 10%);
-    --muted: hsl(40 20% 94%);
-    --muted-foreground: hsl(30 5% 41%);
-    --accent: hsl(351 68% 95%);
-    --accent-foreground: hsl(20 7% 10%);
-    --destructive: hsl(0 72% 50%);
-    --border: hsl(35 25% 90%);
-    --input: hsl(35 25% 90%);
-    --ring: hsl(344 83% 50%);
-    --risk-low: hsl(142 71% 29%);
-    --risk-med: hsl(33 74% 45%);
-    --risk-high: hsl(0 72% 50%);
-    --chart-1: hsl(344 83% 50%);
-    --chart-2: hsl(168 80% 27%);
-    --chart-3: hsl(33 74% 45%);
-    --chart-4: hsl(220 70% 50%);
-    --chart-5: hsl(280 60% 50%);
-    --radius: 0.75rem;
-    --sidebar: hsl(40 100% 99%);
-    --sidebar-foreground: hsl(20 7% 10%);
-    --sidebar-primary: hsl(344 83% 50%);
-    --sidebar-primary-foreground: hsl(40 100% 99%);
-    --sidebar-accent: hsl(351 68% 95%);
-    --sidebar-accent-foreground: hsl(20 7% 10%);
-    --sidebar-border: hsl(35 25% 90%);
-    --sidebar-ring: hsl(344 83% 50%);
+    --background: hsl(240 9% 98.5%);
+    --foreground: hsl(240 10% 9%);
+    --card: hsl(0 0% 100%);
+    --card-foreground: hsl(240 10% 9%);
+    --popover: hsl(0 0% 100%);
+    --popover-foreground: hsl(240 10% 9%);
+    --primary: hsl(346 65% 46%);
+    --primary-foreground: hsl(0 0% 100%);
+    --secondary: hsl(240 5% 94%);
+    --secondary-foreground: hsl(240 10% 9%);
+    --muted: hsl(240 5% 95%);
+    --muted-foreground: hsl(240 4% 40%);
+    --accent: hsl(346 50% 96%);
+    --accent-foreground: hsl(240 10% 9%);
+    --destructive: hsl(0 65% 48%);
+    --border: hsl(240 6% 89%);
+    --input: hsl(240 6% 89%);
+    --ring: hsl(346 65% 46%);
+    --risk-low: hsl(152 55% 32%);
+    --risk-med: hsl(33 70% 42%);
+    --risk-high: hsl(0 65% 48%);
+    --chart-1: hsl(346 65% 46%);
+    --chart-2: hsl(168 60% 30%);
+    --chart-3: hsl(33 70% 42%);
+    --chart-4: hsl(220 60% 48%);
+    --chart-5: hsl(270 45% 50%);
+    --radius: 0.625rem;
+    --sidebar: hsl(0 0% 100%);
+    --sidebar-foreground: hsl(240 10% 9%);
+    --sidebar-primary: hsl(346 65% 46%);
+    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(346 50% 96%);
+    --sidebar-accent-foreground: hsl(240 10% 9%);
+    --sidebar-border: hsl(240 6% 89%);
+    --sidebar-ring: hsl(346 65% 46%);
 }
 
 .dark {
@@ -135,7 +133,7 @@
     @apply bg-background text-foreground antialiased;
     font-optical-sizing: auto;
     }
-  h1, h2 { @apply font-serif; text-wrap: balance; }
+  h1, h2, h3 { text-wrap: balance; letter-spacing: -0.02em; }
   ::selection { background: color-mix(in oklch, var(--primary) 15%, transparent); color: var(--primary); }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
@@ -145,7 +143,7 @@
     }
 }
 /* ---------- 3D heart (heart.js draws a WebGL canvas and HTML artery labels into .heart-stage) */
-.heart-stage { background: radial-gradient(ellipse at 50% 42%, #fffdfa 0%, #f5efe6 75%); }
+.heart-stage { background: radial-gradient(ellipse at 50% 42%, #ffffff 0%, #f0f0f2 78%); }
 .heart-stage canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: grab; }
 .heart-stage canvas:active { cursor: grabbing; }
 .label-layer { position: absolute; inset: 0; pointer-events: none; }

@@ -26,8 +26,7 @@ export function DetailsScreen({ meta, inputs, touched, fromBlank, focus, onChang
       className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-6 py-10">
       <BackLink onClick={onBack}>Back to the questions</BackLink>
       <div>
-        <span className="mb-2 block text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">Optional</span>
-        <h2 className="mb-2 font-serif text-[1.9rem] leading-[1.15] text-foreground md:text-4xl">Any other test results?</h2>
+        <h2 className="mb-2 text-3xl font-semibold tracking-tight text-foreground">Any other test results? <span className="text-muted-foreground">(optional)</span></h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           The {meta.key_inputs.length} questions already give almost the full accuracy. If you have other results (blood tests,
           vital signs, more ECG or echo findings), add them here; anything you leave stays at a typical value.
@@ -35,7 +34,7 @@ export function DetailsScreen({ meta, inputs, touched, fromBlank, focus, onChang
       </div>
       <OptionalInputs meta={meta} inputs={inputs} touched={touched} fromBlank={fromBlank} focus={focus} onChange={onChange} />
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Button size="lg" onClick={onDone} className="h-12 rounded-full sm:flex-1 bg-primary font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90">
+        <Button size="lg" onClick={onDone} className="h-11 self-start rounded-lg px-6 font-semibold">
           See my results <ArrowRight className="ml-1 size-4" aria-hidden="true" />
         </Button>
       </div>
@@ -52,7 +51,7 @@ export function AnalyzingScreen() {
         <IllusECG />
       </motion.div>
       <div className="text-center">
-        <h2 className="mb-5 font-serif text-4xl text-foreground italic">Analyzing the heart…</h2>
+        <h2 className="mb-5 text-2xl font-semibold tracking-tight text-foreground">Analyzing the answers</h2>
         <div className="flex justify-center gap-2.5" aria-hidden="true">
           {[0, 1, 2].map((i) => (
             <motion.span key={i} animate={{ scale: [0.6, 1, 0.6], opacity: [0.3, 1, 0.3] }}
@@ -71,7 +70,7 @@ export function InsightsScreen({ meta, onBack, backLabel }: { meta: Meta; onBack
       transition={{ duration: 0.3, ease: "easeOut" }} className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-12">
       <BackLink onClick={onBack}>{backLabel}</BackLink>
       <div className="max-w-2xl">
-        <h2 className="mb-3 font-serif text-4xl font-bold text-balance text-foreground">How accurate is flowstate?</h2>
+        <h2 className="mb-3 text-3xl font-semibold tracking-tight text-foreground">How accurate is flowstate?</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           Every number below comes from patients the model never saw while learning. It was trained on {meta.n_patients} patients from
           the Z-Alizadeh Sani study, whose arteries were checked by coronary angiography.
@@ -113,7 +112,7 @@ export function LegalScreen({ type, onBack }: { type: LegalType; onBack: () => v
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
       className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-12">
       <div className="mb-8"><BackLink onClick={onBack}>Back</BackLink></div>
-      <h1 className="mb-6 font-serif text-4xl font-semibold text-foreground">{c.title}</h1>
+      <h1 className="mb-6 text-3xl font-semibold tracking-tight text-foreground">{c.title}</h1>
       <div className="space-y-4 text-sm leading-relaxed text-muted-foreground md:text-base">
         {c.body.map((p) => <p key={p.slice(0, 20)}>{p}</p>)}
       </div>

@@ -17,8 +17,8 @@ export function ModelTab({ meta }: { meta: Meta }) {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat label="CAD ROC-AUC" value={f2(m.Cath.auc)} note={`95% CI ${f2(m.Cath.auc_ci_low)}–${f2(m.Cath.auc_ci_high)}`} />
+      <div className="grid grid-cols-2 gap-x-8 gap-y-5 border-y py-5 md:grid-cols-4">
+        <Stat label="CAD ROC-AUC" value={f2(m.Cath.auc)} note={`95% CI ${f2(m.Cath.auc_ci_low)} to ${f2(m.Cath.auc_ci_high)}`} />
         <Stat label="Accuracy" value={pct(m.Cath.accuracy)} note="at the 55% cut-off" />
         <Stat label="Catches CAD (recall)" value={pct(m.Cath.sensitivity)} note={`precision ${pct(m.Cath.ppv)}`} />
         <Stat label="Clears healthy (specificity)" value={pct(m.Cath.specificity)} note={`F1 ${f2(m.Cath.f1)}`} />
@@ -148,13 +148,11 @@ export function ModelTab({ meta }: { meta: Meta }) {
 
 function Stat({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <Card size="sm">
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <div className="text-3xl font-semibold tracking-tight tabular-nums">{value}</div>
-        <p className="text-xs text-muted-foreground">{note}</p>
-      </CardHeader>
-    </Card>
+    <div>
+      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">{value}</div>
+      <div className="text-xs text-muted-foreground">{note}</div>
+    </div>
   )
 }
 

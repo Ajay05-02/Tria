@@ -20,10 +20,10 @@ export function Layout({ children, screen, total, current, answered, onHome, onJ
     <>
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <div className="flex min-h-[100dvh] flex-col bg-background text-foreground">
-        <header className="sticky top-0 z-50 flex items-center justify-between border-b border-border/40 bg-background/85 px-5 py-3.5 backdrop-blur-lg">
+        <header className="sticky top-0 z-50 flex items-center justify-between border-b bg-background px-5 py-3 lg:px-8">
           <button id="logo-btn" onClick={onHome} aria-label="flowstate: go to the start page"
-            className="flex items-center gap-2 rounded-sm font-serif text-2xl font-semibold italic text-foreground transition-colors duration-200 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-            <img src="logo.svg" alt="" className="size-7 not-italic" />
+            className="flex items-center gap-2 rounded-sm text-xl font-semibold tracking-tight text-foreground transition-colors duration-200 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+            <img src="logo.svg" alt="" className="size-7" />
             flowstate
           </button>
 
@@ -44,7 +44,7 @@ export function Layout({ children, screen, total, current, answered, onHome, onJ
           ) : (
             <nav className="flex items-center gap-1 text-sm">
               <button onClick={() => onNavigate("insights")}
-                className={cn("rounded-full px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
+                className={cn("rounded-md px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
                   screen === "insights" && "bg-secondary text-foreground")}>
                 How accurate is it?
               </button>
@@ -54,7 +54,7 @@ export function Layout({ children, screen, total, current, answered, onHome, onJ
 
         <main id="main-content" className="flex flex-1 flex-col overflow-x-hidden">{children}</main>
 
-        <footer className="flex flex-col items-center justify-between gap-3 border-t border-border/40 bg-card/30 px-6 py-5 sm:flex-row">
+        <footer className="flex flex-col items-center justify-between gap-3 border-t px-5 py-4 sm:flex-row lg:px-8">
           <p className="text-xs text-muted-foreground">
             Educational prototype. Not a medical device or a substitute for coronary angiography.
           </p>

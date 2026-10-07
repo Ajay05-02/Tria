@@ -77,12 +77,12 @@ export default function App() {
     if (example) setEdited(true)
   }, [example])
 
-  // Score the current answers, keeping the "Analyzing" screen up for at least 1.6 s (Kard's pacing)
+  // Score the current answers (the "Analyzing" screen stays at least 0.6 s so it does not flicker)
   const analyze = async () => {
     setScreen("analyzing")
     setFromResults(false)
     try {
-      const [p] = await Promise.all([predict(inputsRef.current), new Promise((r) => setTimeout(r, reduceMotion ? 300 : 1600))])
+      const [p] = await Promise.all([predict(inputsRef.current), new Promise((r) => setTimeout(r, 600))])
       setPrediction(p)
       setError(null)
       setScreen("results")
@@ -153,7 +153,7 @@ export default function App() {
 
   const patientLabel = example ? `Example patient ${example.index + 1}` : "New patient"
   const caption = meta && inputs.Age !== undefined
-    ? `${patientLabel}, ${Math.round(inputs.Age)}-year-old ${inputs.Sex === 1 ? "man" : "woman"}${selected ? ` · ${meta.vessels[selected].full}: ${meta.vessels[selected].territory.toLowerCase()}` : ""}`
+    ? `${patientLabel}, ${Math.round(inputs.Age)}-year-old ${inputs.Sex === 1 ? "man" : "woman"}${selected ? `. ${meta.vessels[selected].full}: ${meta.vessels[selected].territory.toLowerCase()}` : ""}`
     : ""
 
   const makePdf = async () => {
@@ -200,12 +200,12 @@ export default function App() {
           {screen === "analyzing" && <AnalyzingScreen key="analyzing" />}
 
           {screen === "results" && meta && prediction && arteries && (
-            <ResultsScreen key="results" meta={meta} prediction={prediction} example={example} edited={edited} arteries={arteries} risks={risks}
+            <ResultsScreen key="results" meta={meta} prediction={prediction} example={example} edited={edited} risks={risks}
               mode={mode} selected={selected} explain={explain} view={view} bpm={inputs.PR ?? 70} caption={caption} busy={busy}
               viewerRef={viewerRef} stageRef={stageRef}
               onMode={setMode} onSelect={selectVessel} onExplain={chooseExplain} onView={setView} onEdit={editFactor}
               onEditAnswers={() => { setFromResults(true); setDirection(-1); setQIndex(0); setScreen("question") }}
-              onRetake={start} onPdf={makePdf} onInsights={() => go("insights")} />
+              onRetake={start} onPdf={makePdf} />
           )}
 
           {screen === "insights" && meta && (

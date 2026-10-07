@@ -12,15 +12,15 @@ const RL = "#F43F5E";   // lighter red
 const G  = "#0E7C66";   // healing green
 const GL = "#D9F2E6";   // green tint
 const AM = "#C77B1E";   // amber / med risk
-const BD = "#ECE6DD";   // border / track
-const CW = "#FFFDFA";   // card white
+const BD = "#E4E4E7";   // border / track
+const CW = "#FFFFFF";   // card white
 const INK= "#1E1B17";   // ink
 
 /* ─── shared reduced-motion query ───────────────────────────── */
 const RMQ = "@media(prefers-reduced-motion:reduce)";
 
 /* ═══════════════════════════════════════════════════════════════
-   HERO – EKG draw animation
+   HERO - EKG draw animation
 ══════════════════════════════════════════════════════════════ */
 export const EkgWave = ({ className }: { className?: string }) => {
   const dx = 150;
@@ -63,7 +63,7 @@ export const EkgWave = ({ className }: { className?: string }) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   Q1 – Age: Ornate clock
+   Q1 - Age: Ornate clock
 ══════════════════════════════════════════════════════════════ */
 export const IllusAge = ({ className }: { className?: string }) => {
   const ticks = Array.from({length:60},(_,i)=>i);
@@ -128,7 +128,7 @@ export const IllusAge = ({ className }: { className?: string }) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   Q2 – Sex: DNA double helix (depth-aware)
+   Q2 - Sex: DNA double helix (depth-aware)
 ══════════════════════════════════════════════════════════════ */
 export const IllusSex = ({ className }: { className?: string }) => {
   const STRANDS = 10;
@@ -166,7 +166,7 @@ export const IllusSex = ({ className }: { className?: string }) => {
             {/* cross rung */}
             <line x1={lx} y1={y} x2={rx} y2={y}
               stroke={BD} strokeWidth="1.5" strokeDasharray="2 3" opacity="0.7"/>
-            {/* strand nodes – depth determines which is in front */}
+            {/* strand nodes - depth determines which is in front */}
             {leftFront ? (
               <>
                 <circle cx={rx} cy={y} r={rSize - 1} fill="url(#g2)"
@@ -194,7 +194,7 @@ export const IllusSex = ({ className }: { className?: string }) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   Q3 – Chest pain: torso + beating heart + pain burst
+   Q3 - Chest pain: torso + beating heart + pain burst
 ══════════════════════════════════════════════════════════════ */
 export const IllusChestPain = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
@@ -233,7 +233,7 @@ export const IllusChestPain = ({ className }: { className?: string }) => (
       </radialGradient>
     </defs>
 
-    {/* ── Torso silhouette — stroke only, no white fill ── */}
+    {/* ── Torso silhouette - stroke only, no white fill ── */}
     {/* Neck */}
     <rect x="90" y="4" width="20" height="18" rx="9"
       fill="none" stroke={BD} strokeWidth="1.8"/>
@@ -243,13 +243,13 @@ export const IllusChestPain = ({ className }: { className?: string }) => (
     {/* Trunk */}
     <path d="M44,58 L42,186 Q64,194 100,194 Q136,194 158,186 L156,58 Z"
       fill="none" stroke={BD} strokeWidth="1.8"/>
-    {/* Sternum — dashed vertical */}
+    {/* Sternum - dashed vertical */}
     <line x1="100" y1="58" x2="100" y2="174"
       stroke={BD} strokeWidth="1" strokeDasharray="3 4" opacity="0.4"/>
     {/* Collarbones */}
     <path d="M90,22 Q74,28 56,36" fill="none" stroke={BD} strokeWidth="1" opacity="0.45"/>
     <path d="M110,22 Q126,28 144,36" fill="none" stroke={BD} strokeWidth="1" opacity="0.45"/>
-    {/* Ribcage — 4 pairs of curved ribs */}
+    {/* Ribcage - 4 pairs of curved ribs */}
     {[0,1,2,3].map(i => {
       const y = 68 + i * 22;
       const op = (0.28 + i * 0.04).toFixed(2);
@@ -288,7 +288,7 @@ export const IllusChestPain = ({ className }: { className?: string }) => (
 );
 
 /* ═══════════════════════════════════════════════════════════════
-   Q4 – Blood pressure: Sphygmomanometer
+   Q4 - Blood pressure: Sphygmomanometer
 ══════════════════════════════════════════════════════════════ */
 export const IllusBP = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg"
@@ -338,9 +338,9 @@ export const IllusBP = ({ className }: { className?: string }) => (
     {[[80,-135],[120,-90],[160,-45],[200,0]].map(([n,deg])=>{
       const a=(deg as number)*Math.PI/180;
       return <text key={n} x={100+55*Math.cos(a)} y={118+55*Math.sin(a)+4}
-        textAnchor="middle" fontSize="8" fill={INK} fontFamily="DM Sans,sans-serif">{n}</text>;
+        textAnchor="middle" fontSize="8" fill={INK} fontFamily="Geist Variable,sans-serif">{n}</text>;
     })}
-    <text x="100" y="148" textAnchor="middle" fontSize="8" fill={INK} fontFamily="DM Sans,sans-serif">mmHg</text>
+    <text x="100" y="148" textAnchor="middle" fontSize="8" fill={INK} fontFamily="Geist Variable,sans-serif">mmHg</text>
     {/* needle */}
     <g className="bp-n">
       <line x1="100" y1="124" x2="100" y2="55" stroke={R} strokeWidth="3" strokeLinecap="round"/>
@@ -359,7 +359,7 @@ export const IllusBP = ({ className }: { className?: string }) => (
 );
 
 /* ═══════════════════════════════════════════════════════════════
-   Q5 – Cholesterol: Artery cross-section with plaque
+   Q5 - Cholesterol: Artery cross-section with plaque
 ══════════════════════════════════════════════════════════════ */
 export const IllusCholesterol = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
@@ -401,12 +401,12 @@ export const IllusCholesterol = ({ className }: { className?: string }) => (
       <ellipse className="rb2" cx="100" cy="112" rx="9"  ry="6.5" fill={R} opacity="0.9"/>
       <ellipse className="rb3" cx="100" cy="100" rx="7"  ry="5"   fill={RL} opacity="0.8"/>
     </g>
-    <text x="100" y="175" textAnchor="middle" fontSize="9" fill={INK} fontFamily="DM Sans,sans-serif" opacity="0.6">Arterial Cross-section</text>
+    <text x="100" y="175" textAnchor="middle" fontSize="9" fill={INK} fontFamily="Geist Variable,sans-serif" opacity="0.6">Arterial Cross-section</text>
   </svg>
 );
 
 /* ═══════════════════════════════════════════════════════════════
-   Q6 – Blood sugar: Droplet with filling animation
+   Q6 - Blood sugar: Droplet with filling animation
 ══════════════════════════════════════════════════════════════ */
 export const IllusBloodSugar = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg"
@@ -455,7 +455,7 @@ export const IllusBloodSugar = ({ className }: { className?: string }) => (
         fill="white" opacity="0"/>
       {/* scale line */}
       <line x1="52" y1="120" x2="46" y2="120" stroke={INK} strokeWidth="1.2" opacity="0.4"/>
-      <text x="40" y="124" textAnchor="middle" fontSize="8" fill={INK} fontFamily="DM Sans,sans-serif" opacity="0.5">120</text>
+      <text x="40" y="124" textAnchor="middle" fontSize="8" fill={INK} fontFamily="Geist Variable,sans-serif" opacity="0.5">120</text>
     </g>
     {/* sparkle stars around droplet */}
     {[[32,55],[165,70],[40,155],[168,140]].map(([sx,sy],i)=>(
@@ -463,12 +463,12 @@ export const IllusBloodSugar = ({ className }: { className?: string }) => (
         <text x={sx} y={sy} textAnchor="middle" fontSize="10" fill={AM} opacity="0.8">✦</text>
       </g>
     ))}
-    <text x="100" y="200" textAnchor="middle" fontSize="9" fill={INK} fontFamily="DM Sans,sans-serif" opacity="0.5">mg/dL</text>
+    <text x="100" y="200" textAnchor="middle" fontSize="9" fill={INK} fontFamily="Geist Variable,sans-serif" opacity="0.5">mg/dL</text>
   </svg>
 );
 
 /* ═══════════════════════════════════════════════════════════════
-   Q7 – ECG: Paper printout scrolling
+   Q7 - ECG: Paper printout scrolling
 ══════════════════════════════════════════════════════════════ */
 export const IllusECG = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
@@ -488,7 +488,7 @@ export const IllusECG = ({ className }: { className?: string }) => (
       <rect x="26" y="40" width="148" height="120" rx="6" fill={CW} stroke={BD} strokeWidth="2"/>
       {/* header strip */}
       <rect x="26" y="40" width="148" height="16" rx="6" fill={BD} opacity="0.4"/>
-      <text x="100" y="52" textAnchor="middle" fontSize="8" fill={INK} fontFamily="DM Sans,sans-serif" fontWeight="600">ECG Readout — Resting</text>
+      <text x="100" y="52" textAnchor="middle" fontSize="8" fill={INK} fontFamily="Geist Variable,sans-serif" fontWeight="600">Resting ECG</text>
       {/* grid */}
       {[68,82,96,110,124,138].map(y=>(
         <line key={y} x1="30" y1={y} x2="170" y2={y} stroke={GL} strokeWidth="0.7" opacity="0.8"/>
@@ -514,7 +514,7 @@ export const IllusECG = ({ className }: { className?: string }) => (
 );
 
 /* ═══════════════════════════════════════════════════════════════
-   Q8 – Max heart rate: Tachometer
+   Q8 - Max heart rate: Tachometer
 ══════════════════════════════════════════════════════════════ */
 export const IllusMaxHR = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 200 185" xmlns="http://www.w3.org/2000/svg"
@@ -572,9 +572,9 @@ export const IllusMaxHR = ({ className }: { className?: string }) => (
     {[[60,-138],[100,-108],[140,-78],[180,-48],[220,0]].map(([n,deg])=>{
       const a=(deg as number)*Math.PI/180;
       return <text key={n} x={100+55*Math.cos(a)} y={118+55*Math.sin(a)+4}
-        textAnchor="middle" fontSize="8" fill={INK} fontFamily="DM Sans,sans-serif">{n}</text>;
+        textAnchor="middle" fontSize="8" fill={INK} fontFamily="Geist Variable,sans-serif">{n}</text>;
     })}
-    <text x="100" y="142" textAnchor="middle" fontSize="8" fill={INK} fontFamily="DM Sans,sans-serif">bpm</text>
+    <text x="100" y="142" textAnchor="middle" fontSize="8" fill={INK} fontFamily="Geist Variable,sans-serif">bpm</text>
     {/* needle */}
     <g className="tn">
       <line x1="100" y1="122" x2="100" y2="52" stroke={R} strokeWidth="3.5" strokeLinecap="round"/>
@@ -586,7 +586,7 @@ export const IllusMaxHR = ({ className }: { className?: string }) => (
 );
 
 /* ═══════════════════════════════════════════════════════════════
-   Q9 – Exercise angina: Figure climbing stairs with heart
+   Q9 - Exercise angina: Figure climbing stairs with heart
 ══════════════════════════════════════════════════════════════ */
 export const IllusAngina = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
@@ -636,7 +636,7 @@ export const IllusAngina = ({ className }: { className?: string }) => (
 );
 
 /* ═══════════════════════════════════════════════════════════════
-   Q10 – ST depression: EKG with highlighted ST zone
+   Q10 - ST depression: EKG with highlighted ST zone
 ══════════════════════════════════════════════════════════════ */
 export const IllusSTDepression = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
@@ -659,7 +659,7 @@ export const IllusSTDepression = ({ className }: { className?: string }) => (
     <rect className="st-band" x="28" y="88" width="144" height="34" fill={R} opacity="0.15" rx="2"/>
     {/* ST label */}
     <text className="st-lbl" x="170" y="108" textAnchor="end" fontSize="8"
-      fill={R} fontFamily="DM Sans,sans-serif" fontWeight="700">ST↓</text>
+      fill={R} fontFamily="Geist Variable,sans-serif" fontWeight="700">ST↓</text>
     {/* scrolling trace */}
     <defs><clipPath id="stCl"><rect x="22" y="40" width="156" height="120"/></clipPath></defs>
     <g clipPath="url(#stCl)" className="st-tape">
@@ -678,7 +678,7 @@ export const IllusSTDepression = ({ className }: { className?: string }) => (
 );
 
 /* ═══════════════════════════════════════════════════════════════
-   Q11 – ST slope: Animated slope graph
+   Q11 - ST slope: Animated slope graph
 ══════════════════════════════════════════════════════════════ */
 export const IllusSTSlope = ({ className }: any) => {
   return (
@@ -702,8 +702,8 @@ export const IllusSTSlope = ({ className }: any) => {
     {/* axes */}
     <line x1="40" y1="168" x2="40"  y2="30"  stroke={BD} strokeWidth="2.5"/>
     <line x1="40" y1="168" x2="175" y2="168" stroke={BD} strokeWidth="2.5"/>
-    <text x="38" y="28" textAnchor="end" fontSize="9" fill={INK} fontFamily="DM Sans,sans-serif">mV</text>
-    <text x="178" y="172" fontSize="9" fill={INK} fontFamily="DM Sans,sans-serif">t</text>
+    <text x="38" y="28" textAnchor="end" fontSize="9" fill={INK} fontFamily="Geist Variable,sans-serif">mV</text>
+    <text x="178" y="172" fontSize="9" fill={INK} fontFamily="Geist Variable,sans-serif">t</text>
     {/* Y tick lines */}
     {[60,90,120,150].map(y=>(
       <line key={y} x1="36" y1={y} x2="170" y2={y} stroke={BD} strokeWidth="0.6" strokeDasharray="4 4"/>
@@ -712,26 +712,26 @@ export const IllusSTSlope = ({ className }: any) => {
     <g className="sl-up">
       <line x1="55" y1="148" x2="160" y2="55" stroke={G} strokeWidth="3.5" strokeLinecap="round"/>
       <circle cx="160" cy="55" r="5" fill={G}/>
-      <text x="165" y="52" fontSize="9" fill={G} fontFamily="DM Sans,sans-serif" fontWeight="700">Up</text>
+      <text x="165" y="52" fontSize="9" fill={G} fontFamily="Geist Variable,sans-serif" fontWeight="700">Up</text>
     </g>
     {/* Flat */}
     <g className="sl-flat">
       <line x1="55" y1="110" x2="160" y2="110" stroke={AM} strokeWidth="3.5" strokeLinecap="round"/>
       <circle cx="160" cy="110" r="5" fill={AM}/>
-      <text x="165" y="114" fontSize="9" fill={AM} fontFamily="DM Sans,sans-serif" fontWeight="700">Flat</text>
+      <text x="165" y="114" fontSize="9" fill={AM} fontFamily="Geist Variable,sans-serif" fontWeight="700">Flat</text>
     </g>
     {/* Downsloping */}
     <g className="sl-dwn">
       <line x1="55" y1="62" x2="160" y2="148" stroke={R} strokeWidth="3.5" strokeLinecap="round"/>
       <circle cx="160" cy="148" r="5" fill={R}/>
-      <text x="165" y="152" fontSize="9" fill={R} fontFamily="DM Sans,sans-serif" fontWeight="700">Down</text>
+      <text x="165" y="152" fontSize="9" fill={R} fontFamily="Geist Variable,sans-serif" fontWeight="700">Down</text>
     </g>
   </svg>
   );
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   Q12 – Blocked vessels: Coronary artery tree
+   Q12 - Blocked vessels: Coronary artery tree
 ══════════════════════════════════════════════════════════════ */
 export const IllusVessels = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
@@ -765,9 +765,9 @@ export const IllusVessels = ({ className }: { className?: string }) => (
     {/* blockage indicator */}
     <g className="v-blk">
       <ellipse cx="60" cy="130" rx="13" ry="10" fill={AM} opacity="0.85"/>
-      <text x="60" y="134" textAnchor="middle" fontSize="11" fill={CW} fontWeight="bold" fontFamily="DM Sans,sans-serif">×</text>
+      <text x="60" y="134" textAnchor="middle" fontSize="11" fill={CW} fontWeight="bold" fontFamily="Geist Variable,sans-serif">×</text>
     </g>
-    <text className="v-lbl" x="80" y="130" fontSize="8" fill={AM} fontFamily="DM Sans,sans-serif" fontWeight="700">Blockage</text>
+    <text className="v-lbl" x="80" y="130" fontSize="8" fill={AM} fontFamily="Geist Variable,sans-serif" fontWeight="700">Blockage</text>
     {/* heart at top */}
     <path d="M100,12 C100,12 90,6 90,0 C90,-5 100,-5 100,0 C100,-5 110,-5 110,0 C110,6 100,12 100,12 Z"
       fill={R} opacity="0.85" transform="translate(0,20) scale(1.1)"/>
@@ -775,7 +775,7 @@ export const IllusVessels = ({ className }: { className?: string }) => (
 );
 
 /* ═══════════════════════════════════════════════════════════════
-   Q13 – Thalassemia: Blood cells in vessel (normal + sickle)
+   Q13 - Thalassemia: Blood cells in vessel (normal + sickle)
 ══════════════════════════════════════════════════════════════ */
 export const IllusThalassemia = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
@@ -824,7 +824,7 @@ export const IllusThalassemia = ({ className }: { className?: string }) => (
         </g>
       </g>
     </g>
-    <text x="100" y="175" textAnchor="middle" fontSize="9" fill={INK} fontFamily="DM Sans,sans-serif" opacity="0.55">Sickle-cell variant (amber)</text>
+    <text x="100" y="175" textAnchor="middle" fontSize="9" fill={INK} fontFamily="Geist Variable,sans-serif" opacity="0.55">Sickle-cell variant (amber)</text>
   </svg>
 );
 
@@ -933,9 +933,9 @@ export const IllusEjection = ({ className }: { className?: string }) => (
     })}
     {[[0, -180], [20, -135], [40, -90], [60, -45], [80, 0]].map(([n, deg]) => {
       const a = (deg as number) * Math.PI / 180
-      return <text key={n} x={100 + 50 * Math.cos(a)} y={118 + 50 * Math.sin(a) + 4} textAnchor="middle" fontSize="8" fill={INK} fontFamily="DM Sans,sans-serif">{n}</text>
+      return <text key={n} x={100 + 50 * Math.cos(a)} y={118 + 50 * Math.sin(a) + 4} textAnchor="middle" fontSize="8" fill={INK} fontFamily="Geist Variable,sans-serif">{n}</text>
     })}
-    <text x="100" y="142" textAnchor="middle" fontSize="8" fill={INK} fontFamily="DM Sans,sans-serif">% pumped out</text>
+    <text x="100" y="142" textAnchor="middle" fontSize="8" fill={INK} fontFamily="Geist Variable,sans-serif">% pumped out</text>
     <g className="efn">
       <line x1="100" y1="122" x2="100" y2="52" stroke={R} strokeWidth="3.5" strokeLinecap="round"/>
       <circle cx="100" cy="52" r="3" fill={R}/>

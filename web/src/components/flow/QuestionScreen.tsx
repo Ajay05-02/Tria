@@ -70,22 +70,18 @@ export function QuestionScreen({ question: q, index, total, direction, inputs, e
   return (
     <motion.div custom={direction} variants={variants} initial="enter" animate="center" exit="exit"
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="mx-auto flex w-full max-w-lg flex-1 flex-col px-6 py-8">
-      <span aria-hidden="true" className="mb-2 block font-serif leading-none font-bold text-primary/30 tabular-nums select-none"
-        style={{ fontSize: "clamp(40px, 8vw, 56px)" }}>
-        {String(index + 1).padStart(2, "0")}
-      </span>
-      <h2 id={`q-title-${index}`} className="mb-2 font-serif text-[1.9rem] leading-[1.15] text-balance text-foreground md:text-4xl">{q.title}</h2>
-      <p className="mb-7 text-sm leading-relaxed text-muted-foreground">{q.desc}</p>
-
-      <div className="relative mx-auto mb-7 flex-shrink-0" style={{ width: 172, height: 172 }} aria-hidden="true">
-        <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-dashed border-border/55" />
-        <span className="absolute -top-[11px] left-1/2 -translate-x-1/2 bg-background px-2 text-[9px] font-bold tracking-[0.15em] whitespace-nowrap text-muted-foreground/40 uppercase">
-          Diagnostic
-        </span>
-        <div className="h-full w-full p-3.5"><Illus className="h-full w-full" /></div>
+      className="mx-auto grid w-full max-w-5xl flex-1 content-center gap-8 px-5 py-8 lg:grid-cols-[1fr_1.1fr] lg:gap-16 lg:px-8 lg:py-12">
+      {/* the question and its picture */}
+      <div className="flex flex-col">
+        <h2 id={`q-title-${index}`} className="text-3xl leading-tight font-semibold tracking-tight text-foreground md:text-4xl">{q.title}</h2>
+        <p className="mt-3 max-w-md text-base leading-relaxed text-muted-foreground">{q.desc}</p>
+        <div className="mt-6 size-36 shrink-0 self-start lg:mt-10 lg:size-48" aria-hidden="true">
+          <Illus className="h-full w-full" />
+        </div>
       </div>
 
+      {/* the answers */}
+      <div className="flex flex-col justify-center">
       <div aria-labelledby={`q-title-${index}`} role="group" className="relative z-10">
         {q.kind === "number" && (
           <Stepper value={num} onChange={(v) => setNum(v)} min={field?.min ?? 0} max={field?.max ?? 100} step={field?.step ?? 1} unit={q.unit} />
@@ -119,17 +115,17 @@ export function QuestionScreen({ question: q, index, total, direction, inputs, e
 
       {onUpdate && (
         <button onClick={() => { if (q.kind === "number" && num !== "") onAnswer({ [q.key]: num }); onUpdate() }}
-          className="mt-6 self-center rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none">
+          className="mt-6 self-start rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none">
           Update my results
         </button>
       )}
 
       <button onClick={onSkip}
-        className="mt-5 self-center rounded text-xs font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+        className="mt-5 self-start rounded text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
         Not sure? Use a typical value
       </button>
 
-      <div className="relative z-0 mt-6 w-full px-2">
+      <div className="relative z-0 mt-6 w-full border-t pt-4">
         <div className="relative flex min-h-[40px] w-full items-center justify-between">
           <button onClick={onPrev} disabled={index === 0}
             className="group z-10 flex items-center rounded text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:pointer-events-none disabled:opacity-0">
@@ -141,7 +137,7 @@ export function QuestionScreen({ question: q, index, total, direction, inputs, e
                 <motion.div initial={{ opacity: 0, y: -40 }}
                   animate={{ opacity: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 12, mass: 1.2 } }}
                   exit={{ opacity: 0, y: -40, transition: { type: "tween", ease: "anticipate", duration: 0.35 } }}
-                  className="flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-sm font-medium whitespace-nowrap text-white shadow-md">
+                  className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium whitespace-nowrap text-white shadow-md">
                   <AlertCircle className="size-4" /> Please choose an answer
                 </motion.div>
               )}
@@ -153,6 +149,7 @@ export function QuestionScreen({ question: q, index, total, direction, inputs, e
           </button>
         </div>
       </div>
+      </div>
     </motion.div>
   )
 }
@@ -162,7 +159,7 @@ function OptionCard({ label, desc, selected, role, onClick }: { label: string; d
   return (
     <button type="button" role={role} aria-selected={role === "option" ? selected : undefined} aria-checked={role === "checkbox" ? selected : undefined}
       onClick={onClick}
-      className={cn("relative flex min-h-[52px] items-center rounded-2xl border p-4 text-left text-sm font-medium transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
+      className={cn("relative flex min-h-[52px] items-center rounded-xl border p-4 text-left text-sm font-medium transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
         selected ? "border-primary bg-primary/[0.07] text-primary" : "border-border bg-card text-foreground hover:border-primary/35 hover:bg-secondary/50")}>
       {selected && (
         <span aria-hidden="true" className="absolute top-1/2 right-3.5 flex size-5 -translate-y-1/2 items-center justify-center rounded-full bg-primary">
