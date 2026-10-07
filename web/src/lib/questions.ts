@@ -5,10 +5,10 @@ import type { Inputs } from "./types"
 export type Illustration =
   | "age" | "sex" | "chestPain" | "bloodSugar" | "bp" | "cholesterol" | "smoking" | "ecg" | "wallMotion" | "pump" | "bloodTest"
 
-interface Base { id: string; title: string; desc: string; illus: Illustration }
-export interface NumberQuestion extends Base { kind: "number"; key: string; unit: string }
-export interface ChoiceQuestion extends Base { kind: "choice"; options: { label: string; desc?: string; values: Inputs }[] }
-export interface MultiQuestion extends Base { kind: "multi"; options: { key: string; label: string; desc?: string }[] }
+interface Base { id: string; title: string; desc: string; illus: Illustration; allowNotSure?: boolean }
+export interface NumberQuestion extends Base { kind: "number"; key: string; unit: string; typicalValue?: number }
+export interface ChoiceQuestion extends Base { kind: "choice"; options: { label: string; desc?: string; values: Inputs }[]; notSureValues?: Inputs; notSureDesc?: string }
+export interface MultiQuestion extends Base { kind: "multi"; options: { key: string; label: string; desc?: string }[]; notSureValues?: Inputs; notSureDesc?: string }
 export type Question = NumberQuestion | ChoiceQuestion | MultiQuestion
 
 const yesNo = (key: string) => [
@@ -36,7 +36,8 @@ export const QUESTIONS: Question[] = [
   { id: "HTN", kind: "choice", illus: "bp", options: yesNo("HTN"),
     title: "High blood pressure?", desc: "Diagnosed hypertension, or taking medicine for it." },
   { id: "DLP", kind: "choice", illus: "cholesterol", options: yesNo("DLP"),
-    title: "High cholesterol?", desc: "Diagnosed dyslipidaemia: high LDL or triglycerides, or low HDL." },
+    title: "High cholesterol?", desc: "Diagnosed dyslipidaemia: high LDL or triglycerides, or low HDL.",
+    allowNotSure: true, notSureValues: { DLP: 0 }, notSureDesc: "Assume normal (no diagnosed dyslipidaemia)" },
   { id: "smoking", kind: "choice", illus: "smoking",
     title: "Smoking", desc: "Smoking damages the lining of the heart's arteries.",
     options: [
@@ -46,6 +47,9 @@ export const QUESTIONS: Question[] = [
     ] },
   { id: "ecg_signs", kind: "multi", illus: "ecg",
     title: "Resting ECG findings", desc: "Signs of reduced blood flow on a resting ECG. Select all that apply.",
+    allowNotSure: true,
+    notSureValues: { "Q Wave": 0, "St Elevation": 0, "St Depression": 0, "Tinversion": 0, "Poor R Progression": 0 },
+    notSureDesc: "No ECG done or findings unknown (assume normal)",
     options: [
       { key: "Q Wave", label: "Pathological Q wave", desc: "Often a sign of an earlier heart attack" },
       { key: "St Elevation", label: "ST elevation" },
@@ -55,6 +59,7 @@ export const QUESTIONS: Question[] = [
     ] },
   { id: "Region RWMA", kind: "choice", illus: "wallMotion",
     title: "Wall-motion abnormality", desc: "On an echocardiogram (heart ultrasound): how many regions of the heart wall move abnormally?",
+    allowNotSure: true, notSureValues: { "Region RWMA": 0 }, notSureDesc: "No echocardiogram done (assume none)",
     options: [
       { label: "None", values: { "Region RWMA": 0 } },
       { label: "1 region", values: { "Region RWMA": 1 } },
@@ -63,9 +68,11 @@ export const QUESTIONS: Question[] = [
       { label: "4 regions", values: { "Region RWMA": 4 } },
     ] },
   { id: "EF-TTE", kind: "number", key: "EF-TTE", unit: "% ejection fraction", illus: "pump",
-    title: "How strongly does the heart pump?", desc: "Ejection fraction from an echocardiogram. Normal is about 55 to 70%." },
+    title: "How strongly does the heart pump?", desc: "Ejection fraction from an echocardiogram. Normal is about 55 to 70%.",
+    allowNotSure: true, typicalValue: 50 },
   { id: "FBS", kind: "number", key: "FBS", unit: "mg/dL", illus: "bloodTest",
-    title: "Fasting blood sugar", desc: "Blood glucose after an overnight fast. Normal is below 100 mg/dL." },
+    title: "Fasting blood sugar", desc: "Blood glucose after an overnight fast. Normal is below 100 mg/dL.",
+    allowNotSure: true, typicalValue: 98 },
 ]
 
 // Which question shows an answer as chosen: one whose inputs all match the current values

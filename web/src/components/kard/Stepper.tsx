@@ -97,8 +97,8 @@ export function Stepper({
   };
 
   return (
-    <div className="relative flex flex-col items-start gap-5">
-      <div className="flex items-center justify-between w-full max-w-xs bg-card border border-border rounded-2xl px-4 py-5">
+    <div className="flex flex-col items-start gap-2.5 w-full max-w-xs">
+      <div className="flex items-center justify-between w-full bg-card border border-border rounded-2xl px-4 py-5">
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
@@ -133,29 +133,19 @@ export function Stepper({
           +
         </button>
       </div>
-      <div className="absolute -bottom-12 flex items-center w-full max-w-xs justify-center">
-        <AnimatePresence>
-          {errorMsg && (
-            <motion.div
-              initial={{ opacity: 0, y: -10, zIndex: -1 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0, 
-                transition: { type: "spring", stiffness: 350, damping: 12, mass: 1.2 } 
-              }}
-              exit={{ 
-                opacity: 0, 
-                y: -10, 
-                transition: { type: "tween", ease: "anticipate", duration: 0.35 } 
-              }}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-md whitespace-nowrap"
-            >
-              <AlertCircle className="w-4 h-4" />
-              {errorMsg}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      <AnimatePresence>
+        {errorMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="bg-red-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 shadow-sm"
+          >
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            {errorMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

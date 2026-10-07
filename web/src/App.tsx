@@ -34,6 +34,7 @@ export default function App() {
   const [meta, setMeta] = useState<Meta | null>(null)
   const [inputs, setInputs] = useState<Inputs>({})
   const [touched, setTouched] = useState<Set<string>>(new Set())
+  const [notSureSet, setNotSureSet] = useState<Set<string>>(new Set())
   const [example, setExample] = useState<Example | null>(null)
   const [edited, setEdited] = useState(false)
   const [prediction, setPrediction] = useState<Prediction | null>(null)
@@ -94,7 +95,7 @@ export default function App() {
 
   const start = () => {
     if (!meta) return
-    setExample(null); setEdited(false); setTouched(new Set()); setInputs(blankInputs(meta))
+    setExample(null); setEdited(false); setTouched(new Set()); setNotSureSet(new Set()); setInputs(blankInputs(meta))
     setSelected(null); setExplain("Cath"); setMode("risk"); setFromResults(false)
     setDirection(1); setQIndex(0); setScreen("question")
   }
@@ -104,14 +105,14 @@ export default function App() {
     if (!r.ok) { setError(`Could not load example patient ${index + 1}.`); return }
     const d = await r.json()
     setExample({ index: d.index, labels: d.labels, heldout: d.heldout })
-    setEdited(false); setTouched(new Set()); setInputs(d.inputs)
+    setEdited(false); setTouched(new Set()); setNotSureSet(new Set()); setInputs(d.inputs)
     setSelected(null); setExplain("Cath"); setMode("risk")
     inputsRef.current = d.inputs
     await analyze()
   }
 
   const q = QUESTIONS[qIndex]
-  const answered = (i: number) => !!example || touched.has(QUESTIONS[i].id)
+  const answered = (i: number) => !!example || touched.has(QUESTIONS[i].id) || notSureSet.has(QUESTIONS[i].id)
   const next = () => {
     if (qIndex < QUESTIONS.length - 1) { setDirection(1); setQIndex(qIndex + 1) } else setScreen("details")
   }
@@ -187,8 +188,17 @@ export default function App() {
 
           {screen === "question" && meta && (
             <QuestionScreen key={`q-${qIndex}`} question={q} index={qIndex} total={QUESTIONS.length} direction={direction}
-              inputs={inputs} entered={answered(qIndex)} field={q.kind === "number" ? meta.fields.find((f) => f.key === q.key) : undefined}
-              onAnswer={(values) => change(q.id, values)} onNext={next} onPrev={prev} onSkip={next}
+              inputs={inputs} entered={answered(qIndex)} isNotSure={notSureSet.has(q.id)}
+              field={q.kind === "number" ? meta.fields.find((f) => f.key === q.key) : undefined}
+              onAnswer={(values) => {
+                setNotSureSet((prev) => { if (!prev.has(q.id)) return prev; const n = new Set(prev); n.delete(q.id); return n })
+                change(q.id, values)
+              }}
+              onNotSure={(values) => {
+                setNotSureSet((prev) => new Set(prev).add(q.id))
+                change(q.id, values)
+              }}
+              onNext={next} onPrev={prev}
               onUpdate={fromResults ? analyze : undefined} />
           )}
 

@@ -36,7 +36,7 @@ export function Layout({ children, screen, total, current, answered, onHome, onJ
                     onPointerDown={(e) => { e.preventDefault(); onJump(i) }}
                     onPointerEnter={(e) => { if (e.buttons === 1) onJump(i) }}
                     className={cn("h-1.5 cursor-pointer rounded-full transition-all duration-300",
-                      i === current ? "w-5 bg-primary opacity-70" : answered(i) ? "w-3 bg-primary" : "w-3 bg-border hover:bg-border/80")} />
+                      i === current ? "w-4 sm:w-5 bg-primary opacity-70" : answered(i) ? "w-2.5 sm:w-3 bg-primary" : "w-2.5 sm:w-3 bg-border hover:bg-border/80")} />
                 ))}
               </div>
               <span className="ml-0.5 text-xs font-semibold tabular-nums text-muted-foreground">{current + 1}/{total}</span>

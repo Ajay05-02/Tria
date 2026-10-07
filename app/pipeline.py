@@ -108,6 +108,8 @@ def fit_platt(p_raw, y_true):
 
 
 def apply_platt(cal, p_raw):
+    if not hasattr(cal, "multi_class"):
+        cal.multi_class = "auto"
     return cal.predict_proba(logit(np.asarray(p_raw, dtype=float)).reshape(-1, 1))[:, 1]
 
 

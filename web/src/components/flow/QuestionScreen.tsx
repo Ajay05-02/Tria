@@ -25,15 +25,30 @@ interface Props {
   direction: 1 | -1
   inputs: Inputs
   entered: boolean
+  isNotSure?: boolean
   field?: Field
   onAnswer: (values: Inputs) => void
+  onNotSure?: (values: Inputs) => void
   onNext: () => void
   onPrev: () => void
-  onSkip: () => void
   onUpdate?: () => void   // shown when editing an answer from the results
 }
 
-export function QuestionScreen({ question: q, index, total, direction, inputs, entered, field, onAnswer, onNext, onPrev, onSkip, onUpdate }: Props) {
+export function QuestionScreen({
+  question: q,
+  index,
+  total,
+  direction,
+  inputs,
+  entered,
+  isNotSure = false,
+  field,
+  onAnswer,
+  onNotSure,
+  onNext,
+  onPrev,
+  onUpdate,
+}: Props) {
   const Illus = ILLUS[q.illus]
   const [showError, setShowError] = useState(false)
   const [advancing, setAdvancing] = useState(false)
@@ -41,10 +56,10 @@ export function QuestionScreen({ question: q, index, total, direction, inputs, e
   const [num, setNum] = useState<number | "">(q.kind === "number" ? inputs[q.key] : "")
   useEffect(() => () => { if (errTimer.current) clearTimeout(errTimer.current) }, [])
 
-  const chosen = q.kind === "choice" && entered ? chosenOption(q, inputs) : -1
-  const onKeys = q.kind === "multi" ? q.options.filter((o) => inputs[o.key] === 1).map((o) => o.key) : []
-  const noneChosen = q.kind === "multi" && entered && onKeys.length === 0
-  const answered = q.kind === "number" ? num !== "" : q.kind === "choice" ? chosen >= 0 : entered || onKeys.length > 0
+  const chosen = q.kind === "choice" && entered && !isNotSure ? chosenOption(q, inputs) : -1
+  const onKeys = q.kind === "multi" && !isNotSure ? q.options.filter((o) => inputs[o.key] === 1).map((o) => o.key) : []
+  const noneChosen = q.kind === "multi" && entered && !isNotSure && onKeys.length === 0
+  const answered = isNotSure || (q.kind === "number" ? num !== "" : q.kind === "choice" ? chosen >= 0 : entered || onKeys.length > 0)
   const last = index === total - 1
 
   const next = () => {
@@ -55,8 +70,8 @@ export function QuestionScreen({ question: q, index, total, direction, inputs, e
       errTimer.current = setTimeout(() => setShowError(false), 3000)
       return
     }
-    if (q.kind === "number" && num !== "") onAnswer({ [q.key]: num })
-    if (q.kind === "multi") onAnswer(Object.fromEntries(q.options.map((o) => [o.key, onKeys.includes(o.key) ? 1 : 0])))
+    if (!isNotSure && q.kind === "number" && num !== "") onAnswer({ [q.key]: num })
+    if (!isNotSure && q.kind === "multi") onAnswer(Object.fromEntries(q.options.map((o) => [o.key, onKeys.includes(o.key) ? 1 : 0])))
     onNext()
   }
 
@@ -82,73 +97,150 @@ export function QuestionScreen({ question: q, index, total, direction, inputs, e
 
       {/* the answers */}
       <div className="flex flex-col justify-center">
-      <div aria-labelledby={`q-title-${index}`} role="group" className="relative z-10">
-        {q.kind === "number" && (
-          <Stepper value={num} onChange={(v) => setNum(v)} min={field?.min ?? 0} max={field?.max ?? 100} step={field?.step ?? 1} unit={q.unit} />
-        )}
-
-        {q.kind === "choice" && (
-          <div className={cn("grid gap-2.5", twoCols ? "grid-cols-2" : "grid-cols-1")} role="listbox" aria-label={q.title}>
-            {q.options.map((o, i) => (
-              <OptionCard key={o.label} label={o.label} desc={o.desc} selected={chosen === i} role="option"
-                onClick={() => {
-                  if (advancing) return
-                  onAnswer(o.values)
-                  setAdvancing(true)
-                  setTimeout(onNext, 400)       // Kard's auto-advance after a choice
-                }} />
-            ))}
-          </div>
-        )}
-
-        {q.kind === "multi" && (
-          <div className="grid grid-cols-1 gap-2.5" role="group" aria-label={q.title}>
-            <OptionCard label="None of these" selected={noneChosen} role="checkbox"
-              onClick={() => onAnswer(Object.fromEntries(q.options.map((o) => [o.key, 0])))} />
-            {q.options.map((o) => (
-              <OptionCard key={o.key} label={o.label} desc={o.desc} selected={onKeys.includes(o.key)} role="checkbox"
-                onClick={() => onAnswer({ [o.key]: onKeys.includes(o.key) ? 0 : 1 })} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {onUpdate && (
-        <button onClick={() => { if (q.kind === "number" && num !== "") onAnswer({ [q.key]: num }); onUpdate() }}
-          className="mt-6 self-start rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none">
-          Update my results
-        </button>
-      )}
-
-      <button onClick={onSkip}
-        className="mt-5 self-start rounded text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-        Not sure? Use a typical value
-      </button>
-
-      <div className="relative z-0 mt-6 w-full border-t pt-4">
-        <div className="relative flex min-h-[40px] w-full items-center justify-between">
-          <button onClick={onPrev} disabled={index === 0}
-            className="group z-10 flex items-center rounded text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:pointer-events-none disabled:opacity-0">
-            <ArrowLeft className="mr-1.5 size-4 transition-transform duration-200 group-hover:-translate-x-1" aria-hidden="true" /> Previous
-          </button>
-          <div className="flex items-center justify-center">
-            <AnimatePresence>
-              {showError && (
-                <motion.div initial={{ opacity: 0, y: -40 }}
-                  animate={{ opacity: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 12, mass: 1.2 } }}
-                  exit={{ opacity: 0, y: -40, transition: { type: "tween", ease: "anticipate", duration: 0.35 } }}
-                  className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium whitespace-nowrap text-white shadow-md">
-                  <AlertCircle className="size-4" /> Please choose an answer
-                </motion.div>
+        <div aria-labelledby={`q-title-${index}`} role="group" className="relative z-10 w-full max-w-md">
+          {q.kind === "number" && (
+            <div className="flex flex-col items-start gap-4">
+              <Stepper
+                value={num}
+                onChange={(v) => {
+                  setNum(v)
+                  if (v !== "") onAnswer({ [q.key]: v })
+                }}
+                min={field?.min ?? 0}
+                max={field?.max ?? 100}
+                step={field?.step ?? 1}
+                unit={q.unit}
+              />
+              {q.allowNotSure && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (advancing) return
+                    const typical = q.typicalValue ?? field?.median ?? 0
+                    setNum(typical)
+                    onNotSure?.({ [q.key]: typical })
+                    setAdvancing(true)
+                    setTimeout(onNext, 400)
+                  }}
+                  className={cn(
+                    "relative flex min-h-[52px] w-full max-w-xs items-center justify-between rounded-xl border p-4 text-left text-sm font-medium transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
+                    isNotSure
+                      ? "border-primary bg-primary/[0.07] text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary/35 hover:bg-secondary/50"
+                  )}
+                >
+                  <span className="flex flex-col">
+                    <span>Not sure</span>
+                    <span className="mt-0.5 text-xs font-normal text-muted-foreground">
+                      Use typical value ({q.typicalValue ?? field?.median ?? 0} {q.unit})
+                    </span>
+                  </span>
+                  {isNotSure ? (
+                    <span aria-hidden="true" className="flex size-5 items-center justify-center rounded-full bg-primary">
+                      <svg viewBox="0 0 10 8" className="size-2.5" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="1,4 3.5,6.5 9,1" />
+                      </svg>
+                    </span>
+                  ) : (
+                    <span className="rounded-md border border-border/80 bg-muted/60 px-2 py-0.5 text-[11px] font-normal text-muted-foreground">
+                      Typical
+                    </span>
+                  )}
+                </button>
               )}
-            </AnimatePresence>
-          </div>
-          <button onClick={next}
-            className="group z-10 flex items-center rounded text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-            {last ? "Finish" : "Next"} <ArrowRight className="ml-1.5 size-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
-          </button>
+            </div>
+          )}
+
+          {q.kind === "choice" && (
+            <div className="flex flex-col gap-2.5">
+              <div className={cn("grid gap-2.5", twoCols ? "grid-cols-2" : "grid-cols-1")} role="listbox" aria-label={q.title}>
+                {q.options.map((o, i) => (
+                  <OptionCard key={o.label} label={o.label} desc={o.desc} selected={!isNotSure && chosen === i} role="option"
+                    onClick={() => {
+                      if (advancing) return
+                      onAnswer(o.values)
+                      setAdvancing(true)
+                      setTimeout(onNext, 400)       // Kard's auto-advance after a choice
+                    }} />
+                ))}
+              </div>
+              {q.allowNotSure && (
+                <OptionCard
+                  label="Not sure"
+                  desc={q.notSureDesc ?? "Use typical value"}
+                  selected={isNotSure}
+                  role="option"
+                  onClick={() => {
+                    if (advancing) return
+                    onNotSure?.(q.notSureValues ?? {})
+                    setAdvancing(true)
+                    setTimeout(onNext, 400)
+                  }}
+                />
+              )}
+            </div>
+          )}
+
+          {q.kind === "multi" && (
+            <div className="grid grid-cols-1 gap-2.5" role="group" aria-label={q.title}>
+              <OptionCard label="None of these" selected={!isNotSure && noneChosen} role="checkbox"
+                onClick={() => onAnswer(Object.fromEntries(q.options.map((o) => [o.key, 0])))} />
+              {q.options.map((o) => (
+                <OptionCard key={o.key} label={o.label} desc={o.desc} selected={!isNotSure && onKeys.includes(o.key)} role="checkbox"
+                  onClick={() => onAnswer({ [o.key]: onKeys.includes(o.key) ? 0 : 1 })} />
+              ))}
+              {q.allowNotSure && (
+                <OptionCard
+                  label="Not sure / No ECG done"
+                  desc={q.notSureDesc ?? "Use typical value (assume normal)"}
+                  selected={isNotSure}
+                  role="checkbox"
+                  onClick={() => {
+                    if (advancing) return
+                    onNotSure?.(q.notSureValues ?? Object.fromEntries(q.options.map((o) => [o.key, 0])))
+                    setAdvancing(true)
+                    setTimeout(onNext, 400)
+                  }}
+                />
+              )}
+            </div>
+          )}
         </div>
-      </div>
+
+        {onUpdate && (
+          <button onClick={() => {
+            if (!isNotSure && q.kind === "number" && num !== "") onAnswer({ [q.key]: num })
+            onUpdate()
+          }}
+            className="mt-6 self-start rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none">
+            Update my results
+          </button>
+        )}
+
+        <div className="relative z-0 mt-8 w-full border-t pt-4">
+          <div className="relative flex min-h-[40px] w-full items-center justify-between">
+            <button onClick={onPrev} disabled={index === 0}
+              className="group z-10 flex items-center rounded text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:pointer-events-none disabled:opacity-0">
+              <ArrowLeft className="mr-1.5 size-4 transition-transform duration-200 group-hover:-translate-x-1" aria-hidden="true" /> Previous
+            </button>
+            <div className="flex items-center justify-center">
+              <AnimatePresence>
+                {showError && (
+                  <motion.div initial={{ opacity: 0, y: -40 }}
+                    animate={{ opacity: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 12, mass: 1.2 } }}
+                    exit={{ opacity: 0, y: -40, transition: { type: "tween", ease: "anticipate", duration: 0.35 } }}
+                    className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium whitespace-nowrap text-white shadow-md">
+                    <AlertCircle className="size-4" /> Please choose an answer
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <button onClick={next}
+              className="group z-10 flex items-center rounded text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+              {last ? "Finish" : "Next"} <ArrowRight className="ml-1.5 size-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
       </div>
     </motion.div>
   )
