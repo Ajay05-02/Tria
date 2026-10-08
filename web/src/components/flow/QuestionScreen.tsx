@@ -1,21 +1,21 @@
 // One question per screen, after Kard's AssessmentScreen (github.com/7-Bala/Kard, MIT)
 import { useEffect, useRef, useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, motion, useIsPresent } from "framer-motion"
 import { AlertCircle, ArrowLeft, ArrowRight } from "lucide-react"
 
 import { Stepper } from "@/components/kard/Stepper"
 import {
-  IllusAge, IllusBloodSugar, IllusBP, IllusChestPain, IllusCholesterol, IllusSex, IllusSmoking,
-  IllusEjection, IllusSTDepression, IllusThalassemia, IllusWallMotion,
-} from "@/components/kard/Svgs"
+  IllusAge, IllusBloodTest, IllusBP, IllusChestPain, IllusCholesterol, IllusDiabetes, IllusECG, IllusPump, IllusSex,
+  IllusSmoking, IllusWallMotion,
+} from "@/components/flow/Illustrations"
 import { cn } from "@/lib/utils"
 import { chosenOption, type Illustration, type Question } from "@/lib/questions"
 import type { Field, Inputs } from "@/lib/types"
 
-const ILLUS: Record<Illustration, (p: { className?: string }) => React.ReactNode> = {
-  age: IllusAge, sex: IllusSex, chestPain: IllusChestPain, bloodSugar: IllusBloodSugar, bp: IllusBP,
-  cholesterol: IllusCholesterol, smoking: IllusSmoking, ecg: IllusSTDepression, wallMotion: IllusWallMotion,
-  pump: IllusEjection, bloodTest: IllusThalassemia,
+const ILLUS: Record<Illustration, (p: { className?: string; value?: number | "" }) => React.ReactNode> = {
+  age: IllusAge, sex: IllusSex, chestPain: IllusChestPain, bloodSugar: IllusDiabetes, bp: IllusBP,
+  cholesterol: IllusCholesterol, smoking: IllusSmoking, ecg: IllusECG, wallMotion: IllusWallMotion,
+  pump: IllusPump, bloodTest: IllusBloodTest,
 }
 
 interface Props {
@@ -27,6 +27,7 @@ interface Props {
   entered: boolean
   isNotSure?: boolean
   field?: Field
+  hasPrev?: boolean       // the first question can go back to the name screen
   onAnswer: (values: Inputs) => void
   onNotSure?: (values: Inputs) => void
   onNext: () => void
@@ -43,6 +44,7 @@ export function QuestionScreen({
   entered,
   isNotSure = false,
   field,
+  hasPrev = index > 0,
   onAnswer,
   onNotSure,
   onNext,
@@ -54,7 +56,16 @@ export function QuestionScreen({
   const [advancing, setAdvancing] = useState(false)
   const errTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [num, setNum] = useState<number | "">(q.kind === "number" ? inputs[q.key] : "")
-  useEffect(() => () => { if (errTimer.current) clearTimeout(errTimer.current) }, [])
+  // Auto-advance after a choice, unless the question has been left meanwhile (for example with the progress dots).
+  // A question that is fading out is still mounted, so being mounted is not enough: it has to be the present one.
+  const advTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const present = useRef(true)
+  present.current = useIsPresent()
+  const advance = () => { advTimer.current = setTimeout(() => { if (present.current) onNext() }, 400) }
+  useEffect(() => () => {
+    if (errTimer.current) clearTimeout(errTimer.current)
+    if (advTimer.current) clearTimeout(advTimer.current)
+  }, [])
 
   const chosen = q.kind === "choice" && entered && !isNotSure ? chosenOption(q, inputs) : -1
   const onKeys = q.kind === "multi" && !isNotSure ? q.options.filter((o) => inputs[o.key] === 1).map((o) => o.key) : []
@@ -90,8 +101,8 @@ export function QuestionScreen({
       <div className="flex flex-col">
         <h2 id={`q-title-${index}`} className="text-3xl leading-tight font-semibold tracking-tight text-foreground md:text-4xl">{q.title}</h2>
         <p className="mt-3 max-w-md text-base leading-relaxed text-muted-foreground">{q.desc}</p>
-        <div className="mt-6 size-36 shrink-0 self-start lg:mt-10 lg:size-48" aria-hidden="true">
-          <Illus className="h-full w-full" />
+        <div className="mt-6 w-full max-w-[300px] shrink-0 self-start lg:mt-10 lg:max-w-[400px]">
+          <Illus className="h-auto w-full" value={q.kind === "number" ? num : undefined} />
         </div>
       </div>
 
@@ -120,7 +131,7 @@ export function QuestionScreen({
                     setNum(typical)
                     onNotSure?.({ [q.key]: typical })
                     setAdvancing(true)
-                    setTimeout(onNext, 400)
+                    advance()
                   }}
                   className={cn(
                     "relative flex min-h-[52px] w-full max-w-xs items-center justify-between rounded-xl border p-4 text-left text-sm font-medium transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
@@ -160,7 +171,7 @@ export function QuestionScreen({
                       if (advancing) return
                       onAnswer(o.values)
                       setAdvancing(true)
-                      setTimeout(onNext, 400)       // Kard's auto-advance after a choice
+                      advance()       // Kard's auto-advance after a choice
                     }} />
                 ))}
               </div>
@@ -174,7 +185,7 @@ export function QuestionScreen({
                     if (advancing) return
                     onNotSure?.(q.notSureValues ?? {})
                     setAdvancing(true)
-                    setTimeout(onNext, 400)
+                    advance()
                   }}
                 />
               )}
@@ -199,7 +210,7 @@ export function QuestionScreen({
                     if (advancing) return
                     onNotSure?.(q.notSureValues ?? Object.fromEntries(q.options.map((o) => [o.key, 0])))
                     setAdvancing(true)
-                    setTimeout(onNext, 400)
+                    advance()
                   }}
                 />
               )}
@@ -219,7 +230,7 @@ export function QuestionScreen({
 
         <div className="relative z-0 mt-8 w-full border-t pt-4">
           <div className="relative flex min-h-[40px] w-full items-center justify-between">
-            <button onClick={onPrev} disabled={index === 0}
+            <button onClick={onPrev} disabled={!hasPrev}
               className="group z-10 flex items-center rounded text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:pointer-events-none disabled:opacity-0">
               <ArrowLeft className="mr-1.5 size-4 transition-transform duration-200 group-hover:-translate-x-1" aria-hidden="true" /> Previous
             </button>

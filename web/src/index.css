@@ -140,6 +140,7 @@
     }
   html {
     @apply font-sans;
+    scrollbar-gutter: stable;   /* a scrollbar coming and going between questions must not shift the header */
     }
 }
 /* ---------- 3D heart (heart.js draws a WebGL canvas and HTML artery labels into .heart-stage) */
@@ -175,3 +176,59 @@
 .skip-link { position: absolute; left: -9999px; top: 1rem; z-index: 9999; padding: 0.5rem 1.25rem; background: var(--primary);
   color: var(--primary-foreground); font-size: 0.875rem; font-weight: 600; border-radius: 0.5rem; }
 .skip-link:focus { left: 1rem; }
+
+/* ---------- the "working out the result" screen: the wordmark writes itself, then a hairline keeps time */
+.loader-mark path { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: loader-write 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.loader-line span { display: block; height: 100%; width: 38%; border-radius: inherit; background: var(--foreground); animation: loader-slide 0.9s ease-in-out infinite alternate; }
+@keyframes loader-write { 0% { stroke-dashoffset: 1; opacity: 0; } 1% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes loader-slide { from { transform: translateX(-8%); } to { transform: translateX(171%); } }
+@media (prefers-reduced-motion: reduce) { .loader-mark path { animation: none; stroke-dashoffset: 0; opacity: 1; } .loader-line span { animation: none; width: 100%; } }
+
+/* ---------- question illustrations (components/flow/Illustrations.tsx) */
+.illus { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.illus .s-ink { stroke: var(--foreground); stroke-width: 3.5; } .illus .s-line { stroke: var(--foreground); stroke-width: 2; }
+.illus .s-hair { stroke: var(--foreground); stroke-width: 1.25; } .illus .s-mute { stroke: var(--muted-foreground); }
+.illus .s-rose { stroke: var(--primary); } .illus .s-bg { stroke: var(--background); }
+.illus .f-ink { fill: var(--foreground); } .illus .f-bg { fill: var(--background); } .illus .f-rose { fill: var(--primary); }
+.illus .f-tint { fill: color-mix(in oklch, var(--foreground) 5%, var(--background)); }
+.illus .f-wall { fill: color-mix(in oklch, var(--foreground) 14%, var(--background)); }
+.illus .f-rose-1 { fill: color-mix(in oklch, var(--primary) 10%, var(--background)); }
+.illus .f-rose-2 { fill: color-mix(in oklch, var(--primary) 30%, var(--background)); }
+.illus .f-blood { fill: color-mix(in oklch, var(--primary) 62%, var(--background)); }
+.illus .stop-rose { stop-color: var(--primary); } .illus .stop-ink { stop-color: var(--foreground); }
+.illus text { font: 500 11.5px/1 var(--font-sans); fill: var(--muted-foreground); stroke: none; }
+.illus text.t-strong { font-weight: 600; fill: var(--foreground); } .illus text.t-rose { fill: var(--primary); font-weight: 600; }
+.illus text.t-num { font: 700 26px/1 var(--font-sans); fill: var(--foreground); font-variant-numeric: tabular-nums; }
+.illus .stop-mute { stop-color: var(--muted-foreground); } .illus .f-mute { fill: var(--muted-foreground); }
+.illus .f-rose-3 { fill: color-mix(in oklch, var(--primary) 44%, var(--background)); }
+.illus .il-age-now { animation: il-age-now 5s ease-in-out infinite alternate; }
+.illus .il-age-half { animation: il-age-half 5s ease-in-out infinite alternate; }
+.illus .il-age-span { transform-box: fill-box; transform-origin: 0 50%; animation: il-age-span 5s ease-in-out infinite alternate; }
+@keyframes il-age-now { to { transform: translateX(109.12px); } }
+@keyframes il-age-half { to { transform: translateX(54.56px); } }
+@keyframes il-age-span { to { transform: scaleX(2.2941); } }
+.illus .il-sex-pick { animation: il-sex-pick 6s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+@keyframes il-sex-pick { 0%, 30% { transform: translateX(0); } 50%, 80% { transform: translateX(120px); } 100% { transform: translateX(0); } }
+.illus .il-pain { animation: il-pain 2.6s ease-in-out infinite alternate; }
+@keyframes il-pain { from { opacity: 0.6; } to { opacity: 1; } }
+.illus .il-dm-flow { animation: il-dm-flow 12s linear infinite; }
+@keyframes il-dm-flow { to { transform: translateX(368px); } }
+.illus text.t-small { font-size: 9px; }
+.illus .il-bp-needle { transform-origin: 228px 84px; animation: il-bp-needle 1.1s ease-in-out infinite alternate; }
+@keyframes il-bp-needle { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+.illus .il-ch-cell { offset-rotate: auto; animation: il-ch-cell 10s linear infinite; }
+@keyframes il-ch-cell { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.illus .il-smoke-a { transform-origin: 226px 128px; animation: il-sway 4.6s ease-in-out infinite alternate; }
+.illus .il-smoke-b { transform-origin: 236px 124px; animation: il-sway 6.2s ease-in-out infinite alternate-reverse; }
+.illus .il-ember { animation: il-ember 2.3s ease-in-out infinite alternate; }
+@keyframes il-sway { from { transform: skewX(-7deg); } to { transform: skewX(7deg); } }
+@keyframes il-ember { from { opacity: 0.6; } to { opacity: 1; } }
+.illus .il-ecg-run { animation: il-ecg-run 3.2s linear infinite; }
+@keyframes il-ecg-run { to { transform: translateX(-120px); } }
+.illus .il-wm-squeeze { transform-origin: 124px 122px; animation: il-wm-squeeze 1s ease-in-out infinite alternate; }
+@keyframes il-wm-squeeze { to { transform: scale(0.64); } }
+.illus .il-fbs-hand { transform-origin: 80px 92px; animation: il-fbs-hand 16s linear infinite; }
+.illus .il-fbs-drop { animation: il-fbs-drop 2.4s ease-in-out infinite alternate; }
+@keyframes il-fbs-hand { to { transform: rotate(360deg); } }
+@keyframes il-fbs-drop { from { opacity: 0.45; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .illus * { animation-play-state: paused !important; } }

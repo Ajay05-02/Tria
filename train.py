@@ -1,4 +1,4 @@
-"""Train the flowstate models (v2), the same recipe as Colab "Model improvement (v2)", Cell 15.
+"""Train the Tria models (v2), the same recipe as Colab "Model improvement (v2)", Cell 15.
 
   P(CAD)    = Platt(random forest on 56 features)
   P(vessel) = P(CAD) x Platt(random forest trained on CAD patients only)
@@ -7,7 +7,7 @@ The two-step vessel model guarantees P(vessel) <= P(CAD), because a blocked arte
 Honest performance estimates come from evaluate.py (repeated nested cross-validation),
 whose output reports/evaluation_v2.json is copied into models/metadata.json when present, together with
 reports/external_validation.json from external_validation.py (the five-hospital check of a basic-input model)
-and reports/clinical_baseline.json from clinical_baseline.py (flowstate against the ESC 2019 and CAD Consortium scores).
+and reports/clinical_baseline.json from clinical_baseline.py (Tria against the ESC 2019 and CAD Consortium scores).
 
 Run:  python train.py   (about 20 seconds)
 """

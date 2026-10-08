@@ -15,7 +15,7 @@ Two audiences, weighted equally:
 
 ## Product Purpose
 
-flowstate predicts overall coronary artery disease (CAD, ≥50% stenosis) and per-artery stenosis risk for the LAD, LCX and RCA from 55 routine clinical inputs. It maps each artery's risk onto an interactive 3D heart and explains every prediction with SHAP values and the CAD Consortium clinical score. Success means a viewer understands a patient's risk, which artery drives it and why within seconds, and trusts the numbers because the validation is shown honestly.
+Tria predicts overall coronary artery disease (CAD, ≥50% stenosis) and per-artery stenosis risk for the LAD, LCX and RCA from 55 routine clinical inputs. It maps each artery's risk onto an interactive 3D heart and explains every prediction with SHAP values and the CAD Consortium clinical score. Success means a viewer understands a patient's risk, which artery drives it and why within seconds, and trusts the numbers because the validation is shown honestly.
 
 ## Positioning
 
@@ -33,12 +33,12 @@ flowstate predicts overall coronary artery disease (CAD, ≥50% stenosis) and pe
 
 - API: `/api/meta`, `/api/patients/{i}`, `/api/predict` (probabilities, thresholds, SHAP contributions, CADC points, range warnings).
 - Inputs are grouped (Demographics, Symptoms, ECG, Echocardiography, labs, etc.) with composite selects (chest pain type, bundle branch block).
-- 3D viewer: torso toggle, risk-map (territory) toggle, heartbeat at the patient's pulse, reset view, clickable artery labels.
+- 3D viewer: risk-map (territory) toggle, heartbeat at the patient's pulse, reset view, clickable artery labels.
 - No build step and no framework; must keep working without a GPU.
 
 ## Brand Commitments
 
-- Name: **flowstate** (lowercase; formerly CardioVision 3D). It names coronary blood flow, which stenosis restricts, and the "flow state" of focus. Tagline: "check your heart's flow state".
+- Name: **Tria** (formerly flowstate and CardioVision 3D). It names the three main coronary arteries the app predicts: the LAD, LCX and RCA. Tagline: "three arteries, one clear picture".
 - Voice: plain, specific, honest about limits. No hype.
 - The educational-prototype disclaimer must stay visible: not a medical device, not a substitute for angiography. (The training-data limits live in Table 2 and the README.)
 

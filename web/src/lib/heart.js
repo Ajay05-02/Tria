@@ -1,4 +1,4 @@
-// flowstate: 3D heart, coronary arteries and torso rendered with Three.js.
+// Tria: 3D heart and coronary arteries rendered with Three.js.
 //
 // The anatomy comes from the HuBMAP Human Reference Atlas female heart v1.0 (CC BY 4.0, by Kristen Browne,
 // from Visible Human data), trimmed and capped into models/heart.glb by tools/build_heart_glb.py.
@@ -193,7 +193,7 @@ export function riskColor(score) {
 }
 
 // ---------------------------------------------------------------- viewer
-export function createHeartViewer(container, { onSelect, reduceMotion = false } = {}) {
+export function createHeartViewer(container, { onSelect, reduceMotion = false, zoom = true } = {}) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -218,6 +218,10 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.minDistance = 2.6;
+  if (!zoom) {            // on a page that scrolls: the wheel and vertical swipes scroll the page, sideways drags turn the heart
+    controls.enableZoom = false;
+    renderer.domElement.style.touchAction = "pan-y";
+  }
   controls.maxDistance = 14;
 
   scene.add(new THREE.HemisphereLight(0xfff6f0, 0x5e4c48, 0.6));
@@ -367,7 +371,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     const div = document.createElement("button");
     div.className = "vessel-label";
     div.type = "button";
-    div.innerHTML = `<span class="sw"></span><b class="nm">${labelNames[name] ?? name}</b><span class="pct"></span>`;
+    div.innerHTML = `<span class="sw" style="background:#888888"></span><b class="nm">${labelNames[name] ?? name}</b><span class="pct"></span>`;
     div.setAttribute("aria-label", `${name}: select this artery`);
     div.addEventListener("click", (e) => { e.stopPropagation(); select(name); onSelect?.(name); });
     anchor.add(new CSS2DObject(div));
@@ -445,43 +449,6 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     vessel([v0, v0.clone().addScaledVector(out, 0.5), v0.clone().add(out)], 0.06, 0.052, PULM_V, LUMEN_V);
   }
 
-  // --- torso: translucent chest, ribs, sternum and spine for anatomical context
-  const torso = new THREE.Group();
-  scene.add(torso);
-  const skinPts = [[2.1, -3.3], [2.3, -2.3], [2.48, -1.1], [2.66, 0.2], [2.78, 1.35], [2.66, 2.25], [2.15, 2.85],
-    [1.15, 3.15], [0.72, 3.35], [0.66, 4.0]].map(([r, y]) => new THREE.Vector2(r, y));
-  const skinGeo = new THREE.LatheGeometry(skinPts, 72);
-  skinGeo.scale(1.22, 1, 0.74);
-  const skin = new THREE.Mesh(skinGeo, new THREE.MeshStandardMaterial({
-    color: 0x6b7079, transparent: true, opacity: 0.03, depthWrite: false, side: THREE.DoubleSide, roughness: 0.6,
-  }));
-  skin.renderOrder = 2;
-  torso.add(skin);
-  const BONE = new THREE.MeshStandardMaterial({ color: 0x8c9198, transparent: true, opacity: 0.16, roughness: 0.7, depthWrite: false });
-  const gap = 0.55;
-  for (let k = 0; k < 10; k++) {
-    const y = 2.35 - k * 0.48;
-    const f = Math.sin(Math.PI * (0.25 + 0.75 * k / 9));
-    const rg = new THREE.TorusGeometry(1, 0.045, 8, 96, 2 * Math.PI - gap);
-    rg.rotateZ(Math.PI / 2 + gap / 2);
-    rg.rotateX(Math.PI / 2);
-    rg.scale(1.7 + 1.15 * f, 1, 1.15 + 0.62 * f);
-    const rib = new THREE.Mesh(rg, BONE);
-    rib.position.y = y;
-    rib.rotation.x = 0.28;
-    rib.renderOrder = 1;
-    torso.add(rib);
-  }
-  const sternum = new THREE.Mesh(new THREE.BoxGeometry(0.34, 2.5, 0.1), BONE);
-  sternum.position.set(0, 1.05, 1.72);
-  sternum.rotation.x = -0.12;
-  torso.add(sternum);
-  for (let y = -3.1; y < 3.3; y += 0.36) {
-    const vert = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.26, 16), BONE);
-    vert.position.set(0, y, -1.62);
-    torso.add(vert);
-  }
-
   // ---------------------------------------------------------------- anatomical heart (Human Reference Atlas)
   // Hide the procedural heart while the anatomical one loads; show it only as a fallback.
   heart.visible = false;
@@ -513,7 +480,6 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     const anat = new THREE.Group();
     scene.add(anat);
     heart = anat;
-    torso.position.set(-1.13, 0, 0.03);    // the atlas heart sits left of the body midline (see build script)
 
     // myocardium: baked tissue colour (sRGB) and coronary territory weights from the build script
     const myo = part("myocardium");
@@ -818,7 +784,6 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false } 
     },
     setHeartRate: (value) => { bpm = THREE.MathUtils.clamp(value || 70, 30, 180); },
     setBeating: (on) => { beating = on; },
-    setTorso: (on) => { torso.visible = on; },
     setTerritories: (on) => { showTerritories = on; recolorMyocardium(); },
     // Stop rendering and remove the canvas and labels (React unmounts the viewer this way)
     dispose: () => {

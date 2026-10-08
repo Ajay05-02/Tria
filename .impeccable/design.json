@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-10-02T00:00:00Z",
-  "title": "Design System: flowstate",
+  "title": "Design System: Tria",
   "extensions": {
     "colorMeta": {
       "paper": {
@@ -389,8 +389,8 @@
       ]
     },
     "brandAssets": {
-      "logo": "static/logo.svg: faceted heart, ink left half and journal-blue right half with lighter/darker facets, paper seams, risk-high marker with paper ring",
-      "favicon": "static/favicon.svg: same faceted mark on a rounded paper tile"
+      "logo": "none; the brand is the hand-drawn Tria wordmark in web/src/lib/wordmark.ts, drawn in the header and the PDF report",
+      "favicon": "static/favicon.svg: the hand-drawn T of the wordmark on a rounded light tile"
     }
   },
   "components": [

@@ -1,5 +1,5 @@
 ---
-name: flowstate
+name: Tria
 description: A patient as a live journal figure; coronary risk painted onto a realistic 3D heart.
 colors:
   paper: "#eff1ee"
@@ -140,7 +140,7 @@ components:
 > **Note (2026-10-05):** the interface has been rebuilt as a guided assessment on Kard's question flow (github.com/7-Bala/Kard, MIT), with React and shadcn/ui, Geist type and a neutral palette with one rose accent; see docs/ai-look-audit.md. This file records the earlier "journal figure" design it replaced.
 
 
-# Design System: flowstate
+# Design System: Tria
 
 ## Overview
 
@@ -165,7 +165,7 @@ The system explicitly rejects the dark navy, cyan-accent card dashboard, and the
 A cool, near-neutral print palette with a single blue voice and a data-only risk ramp.
 
 ### Primary
-- **Journal Blue** (journal-blue): primary buttons, the selected tab underline, selected dot-plot row and vessel label border, link buttons, focus outlines, caret, checkbox accent, and "state" in the lowercase flowstate wordmark. Deepens to Journal Blue Deep on hover; Journal Blue Soft is the selected-row wash, quiet-button hover and text selection.
+- **Journal Blue** (journal-blue): primary buttons, the selected tab underline, selected dot-plot row and vessel label border, link buttons, focus outlines, caret, checkbox accent. Deepens to Journal Blue Deep on hover; Journal Blue Soft is the selected-row wash, quiet-button hover and text selection.
 
 ### Data: risk ramp
 - **Risk Low / Risk Mid / Risk High** (risk-low, risk-mid, risk-high): a three-stop ramp anchored so that each model's own cut-off sits exactly on Risk Mid, eased over a window of 30 points either side. A probability 30 or more points below the cut-off is full Risk Low and 30 or more above is full Risk High; green to ochre eases with t squared (green holds below the cut-off) and ochre to red with t to the 0.7 (red arrives quickly above it). The colour-bar legend uses the exact computed stops of that curve. The same three values are declared in the stylesheet and in the heart renderer, and they colour the coronary arteries, the vessel label swatches, panel B markers, the legend bar, and the SHAP bars (Risk High raises, Risk Low lowers).
@@ -232,7 +232,7 @@ Flat by default. Depth comes from the paper/figure-ground step and from rules, n
 
 Square by default: panels, figure, tables, legend bar, warning strip and SHAP bars have no radius. Controls (buttons, icon buttons, inputs, selects, vessel labels, dot-plot rows) take a slight 4px radius; the status tag takes 2px. Dot-plot markers are the only circles (13px, 1.5px ink ring). Cut-off ticks are 2px ink lines. Icons are the Phosphor regular set, drawn at 1.1em in currentColor.
 
-The brand mark is a faceted (low-poly) heart: the left half in Ink with a darker lower facet, the right half in Journal Blue with a lighter upper facet, separated by thin paper-coloured seams, and a Risk High marker with a paper ring where the facets meet (the panel B marker). It sits beside the wordmark at 40px. The favicon is the same mark on a rounded paper tile so it reads on dark browser tabs.
+The brand is a wordmark only; there is no separate symbol. "Tria" is hand-drawn: an italic hand in a single round-ended stroke, with the bar of the T sweeping over the r. It is defined once in web/src/lib/wordmark.ts and drawn from that definition in the header (32px tall, in the text colour) and in the PDF report header, so the two always match. The favicon is the hand-drawn T on a rounded light tile so it reads on dark browser tabs.
 
 ## Components
 
@@ -270,7 +270,7 @@ CAD and each artery share one 0 to 100% axis. Each row: name with AUC beneath, a
 A one-line summary note, then an axis header ("Lowers" and "Raises" over the bars, "Points" over the value column). Each factor is a fixed two-line cell: the name on one line (500, truncated with an ellipsis) and the patient's value beneath in 12px Grey Ink 3. SHAP contributions run as horizontal bars from a central 1px ink zero line: Risk High to the right, Risk Low to the left, points right-aligned in Grey Ink 2. Formulas and method notes belong in Table 2's note, not under the panels.
 
 ### Heart figure (signature)
-An anatomical heart on the figure ground, from the HuBMAP Human Reference Atlas female heart (models/heart.glb; procedural fallback), shown as a clean glossy textbook model: smooth wine ventricles, pinker atria, red aorta and pulmonary veins, blue pulmonary artery, venae cavae and cardiac veins, vessel stumps capped in a dark lumen colour. Soft contact shadow under the apex and a lit studio backdrop behind the figure. The LAD, LCX and RCA are slightly thickened and coloured by their own risk; their materials are excluded from tone mapping so the rendered hue matches the label swatch and the panel B marker. Selecting an artery dims the others, gently pulses it, tints the muscle it supplies, turns the camera, and retargets panels B and C. Leader-line vessel labels carry a risk swatch, bold name and percentage; anchors are nudged where a label would sit on a great vessel, and every label is held at least 12px inside the figure. A colour-bar legend with a 2px ink cut-off tick sits under the figure with Torso, Risk map and Heartbeat switches and a quiet Reset view button.
+An anatomical heart on the figure ground, from the HuBMAP Human Reference Atlas female heart (models/heart.glb; procedural fallback), shown as a clean glossy textbook model: smooth wine ventricles, pinker atria, red aorta and pulmonary veins, blue pulmonary artery, venae cavae and cardiac veins, vessel stumps capped in a dark lumen colour. Soft contact shadow under the apex and a lit studio backdrop behind the figure. The LAD, LCX and RCA are slightly thickened and coloured by their own risk; their materials are excluded from tone mapping so the rendered hue matches the label swatch and the panel B marker. Selecting an artery dims the others, gently pulses it, tints the muscle it supplies, turns the camera, and retargets panels B and C. Leader-line vessel labels carry a risk swatch, bold name and percentage; anchors are nudged where a label would sit on a great vessel, and every label is held at least 12px inside the figure. A colour-bar legend with a 2px ink cut-off tick sits under the figure with Risk map and Heartbeat switches and a quiet Reset view button.
 
 ### Guide strip, plain words and PDF report
 - **First-visit guide:** one quiet strip under the disclaimer on the figure ground: a one-sentence purpose and three numbered steps (the sequence is the instruction, so numbers are earned). Dismissed with an icon button and remembered per browser.

@@ -1,6 +1,6 @@
-# What makes a website look AI-generated, and what flowstate changed
+# What makes a website look AI-generated, and what Tria changed
 
-Date: 7 October 2026. Sources: the anti-template rules in the design skills used for this project (taste-skill §4 and §9 "AI tells", redesign-skill "Design audit", impeccable's review checklist), checked against flowstate's own code and screenshots.
+Date: 7 October 2026. Sources: the anti-template rules in the design skills used for this project (taste-skill §4 and §9 "AI tells", redesign-skill "Design audit", impeccable's review checklist), checked against Tria's own code and screenshots.
 
 ## Part 1. The tells
 
@@ -48,7 +48,7 @@ AI site builders converge on the same safe defaults. Each one alone is harmless;
 | Generic, unsourced statistics ("1 in 5 adults…", "80% preventable") | Numbers that sound authoritative but are not the product's own. |
 | Decorative labels on illustrations ("DIAGNOSTIC") | Text that labels nothing. |
 
-## Part 2. Findings in flowstate and what changed
+## Part 2. Findings in Tria and what changed
 
 | Where | Found | Change |
 |---|---|---|

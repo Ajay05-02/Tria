@@ -1,12 +1,12 @@
-"""Does flowstate beat the scores doctors already use? Compare, on the same 303 patients:
+"""Does Tria beat the scores doctors already use? Compare, on the same 303 patients:
 
   ESC 2019 pre-test probability   (Knuuti et al., Eur Heart J 2020;41:407, Table 5: age band, sex, symptom type)
   CAD Consortium clinical model    (Genders et al., BMJ 2012;344:e3485: age, sex, chest pain, DM, HTN, DLP, smoking)
-  flowstate                        held-out (cross-validated) CAD predictions from train.py
+  Tria                        held-out (cross-validated) CAD predictions from train.py
 
 Metrics: ROC-AUC with paired bootstrap CIs of the difference; specificity at 90% sensitivity (how many unnecessary
 angiograms each method would avoid while catching 90% of CAD patients, each method at its own best cut-off);
-the ESC "test above 15%" rule against flowstate's rule-out cut-off, whose numbers come from evaluate.py (the cut-off is
+the ESC "test above 15%" rule against Tria's rule-out cut-off, whose numbers come from evaluate.py (the cut-off is
 chosen inside the training folds, so it is not tuned on the patients it is scored on); mean predicted risk;
 decision curves with the two scores recalibrated to this population by 5-fold logistic recalibration (a fair
 comparison: published scores were built for lower-risk patients).
@@ -25,7 +25,7 @@ from app.pipeline import ROOT, add_clinical_features, load_raw, preprocess
 
 OUT = ROOT / "reports" / "clinical_baseline.json"
 EVALUATION = ROOT / "reports" / "evaluation_v2.json"   # nested cross-validation, from evaluate.py
-SENSITIVITY = 0.90   # the rule-out target flowstate is designed for
+SENSITIVITY = 0.90   # the rule-out target Tria is designed for
 
 # ESC 2019 Table 5, percent. Rows: age bands 30-39 .. 70+. Columns per symptom: (men, women)
 ESC_BANDS = [(30, 39), (40, 49), (50, 59), (60, 69), (70, 200)]
@@ -119,7 +119,7 @@ def main():
     p_cadc = 1 / (1 + np.exp(-add_clinical_features(X)["CADC_logit"].values))
 
     rng = np.random.default_rng(0)
-    methods = {"ESC 2019 pre-test probability": p_esc, "CAD Consortium clinical score": p_cadc, "flowstate": p_model}
+    methods = {"ESC 2019 pre-test probability": p_esc, "CAD Consortium clinical score": p_cadc, "Tria": p_model}
 
     rows = {}
     for name, p in methods.items():
@@ -130,7 +130,7 @@ def main():
             "specificity_at_90_sensitivity": round(spec_at_sens(y, p, SENSITIVITY), 3),
         }
     for name in ["ESC 2019 pre-test probability", "CAD Consortium clinical score"]:
-        rows[name]["flowstate_auc_minus_this"] = boot_diff(y, p_model, methods[name], rng)
+        rows[name]["tria_auc_minus_this"] = boot_diff(y, p_model, methods[name], rng)
 
     # The ESC rule as written: test when PTP > 15%
     esc_test = p_esc > 0.15
@@ -140,7 +140,7 @@ def main():
         "specificity": round(float((~esc_test[y == 0]).mean()), 3),
         "missed_cad_patients": int((~esc_test & (y == 1)).sum()),
     }
-    # flowstate's rule-out cut-off, from nested cross-validation: choosing the cut-off on these same held-out
+    # Tria's rule-out cut-off, from nested cross-validation: choosing the cut-off on these same held-out
     # predictions would flatter it (it gave 14 missed patients; the honest figure is about 20)
     nested = json.loads(EVALUATION.read_text())["v2_calibrated_with_threshold"]["Cath"]
     model_rule = {
@@ -154,20 +154,20 @@ def main():
     # Decision curves, with both scores recalibrated to this population
     thresholds = [round(t, 2) for t in np.arange(0.10, 0.86, 0.05)]
     recal = {"ESC 2019 (recalibrated)": recalibrate(y, p_esc), "CAD Consortium (recalibrated)": recalibrate(y, p_cadc),
-             "flowstate": p_model}
+             "Tria": p_model}
     curves = {name: [round(net_benefit(y, p, t), 4) for t in thresholds] for name, p in recal.items()}
     curves["Refer everyone"] = [round(float(y.mean() - (1 - y.mean()) * t / (1 - t)), 4) for t in thresholds]
 
     report = {
         "n_patients": int(len(y)), "cad_rate": round(float(y.mean()), 3),
-        "flowstate_predictions": "held-out (5-fold cross-validated) predictions from train.py",
+        "tria_predictions": "held-out (5-fold cross-validated) predictions from train.py",
         "esc_symptom_classes": {c: esc_classes.count(c) for c in sorted(set(esc_classes))},
-        "methods": rows, "esc_rule_ptp_over_15": esc_rule, "flowstate_rule_out_cut_off": model_rule,
+        "methods": rows, "esc_rule_ptp_over_15": esc_rule, "tria_rule_out_cut_off": model_rule,
         "sensitivity_target": SENSITIVITY,
         "decision_curve": {"thresholds": thresholds, "net_benefit": curves},
         "notes": ["ESC classes: under-30s use the 30-39 row; patients with no chest pain and no dyspnoea get the "
                   "non-anginal (lowest) value.",
-                  "The CAD Consortium score is also one of flowstate's inputs; flowstate adds ECG, echo and "
+                  "The CAD Consortium score is also one of Tria's inputs; Tria adds ECG, echo and "
                   "laboratory information on top of it."],
     }
     OUT.write_text(json.dumps(report, indent=2))
@@ -175,9 +175,9 @@ def main():
     for name, r in rows.items():
         print(f"{name:32s} AUC {r['auc']:.3f} {r['auc_ci95']}  mean predicted {r['mean_predicted']:.2f}  "
               f"specificity at 90% sensitivity {r['specificity_at_90_sensitivity']:.2f}"
-              + (f"  flowstate minus this {r['flowstate_auc_minus_this']}" if "flowstate_auc_minus_this" in r else ""))
+              + (f"  Tria minus this {r['tria_auc_minus_this']}" if "tria_auc_minus_this" in r else ""))
     print("ESC rule (PTP > 15%):", esc_rule)
-    print("flowstate rule-out cut-off:", model_rule)
+    print("Tria rule-out cut-off:", model_rule)
     print("ESC symptom classes:", report["esc_symptom_classes"])
     i30, i50 = thresholds.index(0.3), thresholds.index(0.5)
     for name, c in curves.items():

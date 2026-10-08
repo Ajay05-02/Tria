@@ -858,7 +858,7 @@ export const RiskRingSVG = ({ value, color, className }: { value: number; color:
 };
 
 /* ═══════════════════════════════════════════════════════════════
-   flowstate additions, drawn in the same palette and style
+   Tria additions, drawn in the same palette and style
 ══════════════════════════════════════════════════════════════ */
 
 /* Smoking: a cigarette with a glowing tip and rising smoke */

@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from "react"
-import { FileDown, HeartPulse, Layers, PersonStanding, RotateCcw } from "lucide-react"
+import { FileDown, HeartPulse, Layers, RotateCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -11,7 +11,7 @@ import type { Vessel } from "@/lib/types"
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
-export type ViewOption = "torso" | "riskmap" | "beat"
+export type ViewOption = "riskmap" | "beat"
 
 interface Props {
   viewerRef: RefObject<HeartViewer | null>
@@ -53,7 +53,6 @@ export function HeartView({ viewerRef, stageRef, risks, selected, plain, bpm, vi
   useEffect(() => { viewerRef.current?.setHeartRate(bpm) }, [bpm, viewerRef])
   useEffect(() => {
     const v = viewerRef.current
-    v?.setTorso(view.includes("torso"))
     v?.setTerritories(view.includes("riskmap"))
     v?.setBeating(view.includes("beat"))
   }, [view, viewerRef])
@@ -78,7 +77,6 @@ export function HeartView({ viewerRef, stageRef, risks, selected, plain, bpm, vi
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ToggleGroup type="multiple" variant="outline" size="sm" value={view} onValueChange={(v) => onView(v as ViewOption[])} aria-label="View options">
-            <ToggleGroupItem value="torso" aria-label="Show torso"><PersonStanding /><span className="hidden sm:inline">Torso</span></ToggleGroupItem>
             <ToggleGroupItem value="riskmap" aria-label="Colour the heart muscle by risk"><Layers /><span className="hidden sm:inline">Risk map</span></ToggleGroupItem>
             <ToggleGroupItem value="beat" aria-label="Heartbeat"><HeartPulse /><span className="hidden sm:inline">Beat</span></ToggleGroupItem>
           </ToggleGroup>

@@ -1,4 +1,4 @@
-"""Checks that guard the claims flowstate makes. Run: python -m pytest  (about 30 seconds)
+"""Checks that guard the claims Tria makes. Run: python -m pytest  (about 30 seconds)
 
 Needs the trained models: run python train.py first (the Docker build does this automatically).
 """

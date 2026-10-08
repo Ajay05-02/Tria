@@ -82,7 +82,7 @@ export function ModelTab({ meta }: { meta: Meta }) {
                 <TableHeader><TableRow><TableHead>Method</TableHead><TableHead className="text-right">ROC-AUC</TableHead></TableRow></TableHeader>
                 <TableBody className="tabular-nums">
                   {Object.entries(cb.methods).map(([name, r]) => (
-                    <TableRow key={name} className={name === "flowstate" ? "font-semibold" : ""}>
+                    <TableRow key={name} className={name === "Tria" ? "font-semibold" : ""}>
                       <TableCell>{name.replace(" pre-test probability", "").replace(" clinical score", "")}</TableCell>
                       <TableCell className="text-right">{f2(r.auc)}</TableCell>
                     </TableRow>
@@ -90,7 +90,7 @@ export function ModelTab({ meta }: { meta: Meta }) {
                 </TableBody>
               </Table>
               <p className="mt-3 text-xs text-muted-foreground">
-                The ESC rule misses {cb.esc_rule_ptp_over_15.missed_cad_patients} CAD patients; flowstate's cut-off misses about {Math.round(cb.flowstate_rule_out_cut_off.missed_cad_patients)}.
+                The ESC rule misses {cb.esc_rule_ptp_over_15.missed_cad_patients} CAD patients; Tria's cut-off misses about {Math.round(cb.tria_rule_out_cut_off.missed_cad_patients)}.
               </p>
             </CardContent>
           </Card>

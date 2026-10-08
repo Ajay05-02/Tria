@@ -5,7 +5,7 @@ primary_target: "static/index.html"
 related_targets: []
 ---
 
-# Surface: flowstate dashboard (static/index.html)
+# Surface: Tria dashboard (static/index.html)
 
 Mode: Operate. Audience: hackathon judges (demo video, laptop, dim room) and clinicians, equally. Task: load or edit a patient, read CAD and per-artery risk on the heart, understand why, judge how far to trust it. Must keep every existing feature and the visible disclaimer. Must not feel gamey or like grey EHR software.
 

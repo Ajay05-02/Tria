@@ -66,9 +66,9 @@ export interface Meta {
   clinical_baseline: {
     n_patients: number
     sensitivity_target: number
-    methods: Record<string, { auc: number; auc_ci95: [number, number]; specificity_at_90_sensitivity: number; flowstate_auc_minus_this?: [number, number, number] }>
+    methods: Record<string, { auc: number; auc_ci95: [number, number]; specificity_at_90_sensitivity: number; tria_auc_minus_this?: [number, number, number] }>
     esc_rule_ptp_over_15: { missed_cad_patients: number; sensitivity: number; specificity: number }
-    flowstate_rule_out_cut_off: { missed_cad_patients: number; sensitivity: number; specificity: number }
+    tria_rule_out_cut_off: { missed_cad_patients: number; sensitivity: number; specificity: number }
   } | null
   localisation_auc: Record<Vessel, number> | null
   cad_vessel_rate: Record<Vessel, number> | null

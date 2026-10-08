@@ -1,14 +1,19 @@
-// Landing page: the message and one call to action beside a real render of flowstate's 3D heart
+// Landing page: the message and one call to action beside the live 3D heart. It carries no patient data:
+// the arteries are named but stay neutral until someone has answered the questions
+import { useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { labelNames } from "@/lib/format"
+import { createHeartViewer } from "@/lib/heart.js"
 import type { Meta } from "@/lib/types"
 
-interface Props { meta: Meta | null; onStart: () => void; onExample: (index: number) => void }
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
-export function HeroScreen({ meta, onStart, onExample }: Props) {
+interface Props { meta: Meta | null; onStart: () => void }
+
+export function HeroScreen({ meta, onStart }: Props) {
   const n = meta?.key_inputs.length ?? 11
   const ev = meta?.evaluation?.v2_calibrated_with_threshold.Cath
   const facts = [
@@ -16,6 +21,21 @@ export function HeroScreen({ meta, onStart, onExample }: Props) {
     { value: ev ? `${Math.round(ev.sensitivity * 100)}%` : "91%", label: "of patients with the disease caught at the cut-off" },
     { value: meta?.external_validation ? meta.external_validation.n_patients.toLocaleString("en") : "1,223", label: "patients from 5 hospitals in the external check" },
   ]
+  const stageRef = useRef<HTMLDivElement | null>(null)
+
+  // The same Three.js heart as the results page; the wheel is left to the page so the landing still scrolls
+  useEffect(() => {
+    let picked: string | null = null
+    const viewer = createHeartViewer(stageRef.current!, {
+      reduceMotion, zoom: false,
+      onSelect: (v) => { picked = v === picked ? null : v; viewer.select(picked) },
+    })
+    viewer.setLabelNames(labelNames(false))
+    viewer.setBeating(!reduceMotion)
+    viewer.setTerritories(false)
+    return () => viewer.dispose()
+  }, [])
+
   const rise = (delay: number) => ({ initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } })
 
   return (
@@ -27,47 +47,29 @@ export function HeroScreen({ meta, onStart, onExample }: Props) {
             Coronary risk, mapped onto the heart.
           </motion.h1>
           <motion.p {...rise(0.15)} className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
-            Answer {n} questions. flowstate estimates the chance of coronary artery disease and shows which artery is most at risk.
+            Answer {n} questions. Tria estimates the chance of coronary artery disease and shows which artery is most at risk.
           </motion.p>
-          <motion.div {...rise(0.25)} className="mt-8 flex flex-wrap items-center gap-3">
+          <motion.div {...rise(0.25)} className="mt-8">
             <Button size="lg" onClick={onStart} disabled={!meta} className="h-11 rounded-lg px-6 text-[0.95rem] font-semibold">
               Start the assessment <ArrowRight className="ml-1 size-4" aria-hidden="true" />
             </Button>
-            {meta && (
-              <Select onValueChange={(v) => onExample(Number(v))}>
-                <SelectTrigger className="h-11 rounded-lg bg-card px-4 text-[0.95rem]" aria-label="Open a patient from the study">
-                  <SelectValue placeholder="Open a study patient" />
-                </SelectTrigger>
-                <SelectContent className="max-h-80">
-                  <SelectGroup>
-                    <SelectLabel>Patients from the study</SelectLabel>
-                    {meta.patients.map((p) => (
-                      <SelectItem key={p.index} value={String(p.index)}>Example {p.index + 1}: {p.age}-year-old {p.sex === 1 ? "man" : "woman"}</SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            )}
           </motion.div>
         </div>
 
-        <motion.figure {...rise(0.2)} className="overflow-hidden rounded-2xl border bg-card">
-          <img src="hero-heart.jpg" width={1200} height={900} className="h-auto w-full"
-            alt="flowstate's 3D heart for an example patient: the LAD artery is red at 94% risk, the RCA amber at 37% and the LCX green at 17%." />
-          <figcaption className="border-t px-5 py-3 text-sm text-muted-foreground">
-            An example patient from the study: the front artery (LAD) is the most likely to be narrowed.
-          </figcaption>
-        </motion.figure>
+        <motion.div {...rise(0.2)} className="overflow-hidden rounded-2xl border bg-card">
+          <div ref={stageRef} className="heart-stage relative aspect-[4/3] w-full" role="img"
+            aria-label="Interactive 3D heart with the three main coronary arteries labelled: LAD, LCX and RCA. Drag to rotate, click an artery." />
+        </motion.div>
       </section>
 
       <section className="border-t bg-card" aria-label="How well it works">
-        <div className="mx-auto grid max-w-6xl gap-6 px-5 py-7 sm:grid-cols-[auto_1fr] sm:items-center lg:px-8">
-          <p className="max-w-[15rem] text-sm font-medium text-foreground">Tested on patients the model never saw</p>
-          <dl className="grid gap-x-10 gap-y-4 sm:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl gap-6 px-5 py-7 lg:grid-cols-[auto_1fr] lg:items-center lg:gap-10 lg:px-8">
+          <p className="max-w-[15rem] text-sm font-medium text-foreground">Checked against real angiograms</p>
+          <dl className="grid gap-x-10 gap-y-5 sm:grid-cols-3">
             {facts.map((f) => (
-              <div key={f.label} className="flex items-baseline gap-2.5">
+              <div key={f.label} className="grid grid-cols-[4.5rem_1fr] items-center gap-x-3">
                 <dt className="sr-only">{f.label}</dt>
-                <dd className="text-2xl font-semibold tracking-tight tabular-nums">{f.value}</dd>
+                <dd className="text-right text-2xl font-semibold tracking-tight tabular-nums">{f.value}</dd>
                 <dd className="text-sm leading-snug text-muted-foreground">{f.label}</dd>
               </div>
             ))}

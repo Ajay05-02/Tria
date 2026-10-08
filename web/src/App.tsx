@@ -1,5 +1,5 @@
-// flowstate: a guided assessment in the style of Kard (github.com/7-Bala/Kard, MIT).
-// Hero → 11 key questions (one per screen) → optional details → analyzing → results (risk ring, 3D heart, reasons)
+// Tria: a guided assessment in the style of Kard (github.com/7-Bala/Kard, MIT).
+// Hero → patient name → 11 key questions (one per screen) → optional details → analyzing → results (risk ring, 3D heart, reasons)
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence } from "framer-motion"
 import { AlertCircle } from "lucide-react"
@@ -11,7 +11,7 @@ import { HeroScreen } from "@/components/flow/HeroScreen"
 import { Layout, type Screen } from "@/components/flow/Layout"
 import { QuestionScreen } from "@/components/flow/QuestionScreen"
 import { ResultsScreen } from "@/components/flow/ResultsScreen"
-import { AnalyzingScreen, DetailsScreen, InsightsScreen, LegalScreen } from "@/components/flow/Screens"
+import { AnalyzingScreen, DetailsScreen, InsightsScreen, LegalScreen, NameScreen } from "@/components/flow/Screens"
 import { pctRisk, riskScore, VESSELS } from "@/lib/format"
 import type { HeartViewer, VesselRisk } from "@/lib/heart.js"
 import { savePdf } from "@/lib/pdf"
@@ -33,6 +33,7 @@ const predict = async (inputs: Inputs): Promise<Prediction> => {
 export default function App() {
   const [meta, setMeta] = useState<Meta | null>(null)
   const [inputs, setInputs] = useState<Inputs>({})
+  const [patientName, setPatientName] = useState("")      // a label only: never part of the inputs sent to the server
   const [touched, setTouched] = useState<Set<string>>(new Set())
   const [notSureSet, setNotSureSet] = useState<Set<string>>(new Set())
   const [example, setExample] = useState<Example | null>(null)
@@ -96,8 +97,8 @@ export default function App() {
   const start = () => {
     if (!meta) return
     setExample(null); setEdited(false); setTouched(new Set()); setNotSureSet(new Set()); setInputs(blankInputs(meta))
-    setSelected(null); setExplain("Cath"); setMode("risk"); setFromResults(false)
-    setDirection(1); setQIndex(0); setScreen("question")
+    setSelected(null); setExplain("Cath"); setMode("risk"); setFromResults(false); setPatientName("")
+    setDirection(1); setQIndex(0); setScreen("name")
   }
 
   const openExample = async (index: number) => {
@@ -105,7 +106,7 @@ export default function App() {
     if (!r.ok) { setError(`Could not load example patient ${index + 1}.`); return }
     const d = await r.json()
     setExample({ index: d.index, labels: d.labels, heldout: d.heldout })
-    setEdited(false); setTouched(new Set()); setNotSureSet(new Set()); setInputs(d.inputs)
+    setEdited(false); setTouched(new Set()); setNotSureSet(new Set()); setInputs(d.inputs); setPatientName("")
     setSelected(null); setExplain("Cath"); setMode("risk")
     inputsRef.current = d.inputs
     await analyze()
@@ -116,7 +117,7 @@ export default function App() {
   const next = () => {
     if (qIndex < QUESTIONS.length - 1) { setDirection(1); setQIndex(qIndex + 1) } else setScreen("details")
   }
-  const prev = () => { if (qIndex > 0) { setDirection(-1); setQIndex(qIndex - 1) } }
+  const prev = () => { if (qIndex > 0) { setDirection(-1); setQIndex(qIndex - 1) } else if (!example) setScreen("name") }
   const jump = (i: number) => {
     const firstOpen = QUESTIONS.findIndex((_, k) => !answered(k))
     const target = Math.min(i, firstOpen === -1 ? QUESTIONS.length - 1 : firstOpen)
@@ -152,7 +153,7 @@ export default function App() {
     return [v, { probability: a.probability, score: riskScore(a.probability, a.threshold), high: a.high, text: pctRisk(a.probability) }]
   })) as Record<Vessel, VesselRisk>, [arteries])
 
-  const patientLabel = example ? `Example patient ${example.index + 1}` : "New patient"
+  const patientLabel = example ? `Example patient ${example.index + 1}` : patientName.trim() || "New patient"
   const caption = meta && inputs.Age !== undefined
     ? `${patientLabel}, ${Math.round(inputs.Age)}-year-old ${inputs.Sex === 1 ? "man" : "woman"}${selected ? `. ${meta.vessels[selected].full}: ${meta.vessels[selected].territory.toLowerCase()}` : ""}`
     : ""
@@ -184,12 +185,18 @@ export default function App() {
         )}
 
         <AnimatePresence mode="wait" custom={direction}>
-          {screen === "hero" && <HeroScreen key="hero" meta={meta} onStart={start} onExample={openExample} />}
+          {screen === "hero" && <HeroScreen key="hero" meta={meta} onStart={start} />}
+
+          {screen === "name" && (
+            <NameScreen key="name" name={patientName} onChange={setPatientName} onBack={() => setScreen("hero")}
+              onNext={() => { setDirection(1); setQIndex(0); setScreen("question") }} />
+          )}
 
           {screen === "question" && meta && (
             <QuestionScreen key={`q-${qIndex}`} question={q} index={qIndex} total={QUESTIONS.length} direction={direction}
               inputs={inputs} entered={answered(qIndex)} isNotSure={notSureSet.has(q.id)}
               field={q.kind === "number" ? meta.fields.find((f) => f.key === q.key) : undefined}
+              hasPrev={qIndex > 0 || !example}
               onAnswer={(values) => {
                 setNotSureSet((prev) => { if (!prev.has(q.id)) return prev; const n = new Set(prev); n.delete(q.id); return n })
                 change(q.id, values)
@@ -223,7 +230,7 @@ export default function App() {
           )}
 
           {(screen === "about" || screen === "privacy" || screen === "terms") && (
-            <LegalScreen key={screen} type={screen} onBack={() => setScreen(back)} />
+            <LegalScreen key={screen} type={screen} meta={meta} onExample={openExample} onBack={() => setScreen(back)} />
           )}
         </AnimatePresence>
       </Layout>

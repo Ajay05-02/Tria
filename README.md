@@ -1,5 +1,5 @@
 ---
-title: flowstate
+title: Tria
 emoji: 🫀
 colorFrom: red
 colorTo: blue
@@ -9,9 +9,9 @@ pinned: false
 short_description: Coronary artery disease risk mapped onto an interactive 3D heart
 ---
 
-# flowstate
+# Tria
 
-*Check your heart's flow state.*
+*Three arteries, one clear picture.*
 
 **Predicts coronary artery disease (CAD) and the stenosis risk of each main coronary artery (LAD, LCX, RCA) from routine clinical data, then maps the risk onto an interactive 3D heart.**
 
@@ -19,7 +19,7 @@ Built for the **Multimodal AI Hackathon 2026, Track A: Cardiovascular Risk Visua
 
 > ⚠ **Educational decision-support prototype only.** Not a medical device and not a substitute for coronary angiography or formal diagnostic imaging.
 
-![flowstate dashboard](docs/screenshot.jpg)
+![Tria dashboard](docs/screenshot.jpg)
 
 ## What it does
 
@@ -28,8 +28,8 @@ Built for the **Multimodal AI Hackathon 2026, Track A: Cardiovascular Risk Visua
   - each coronary artery runs in its fat groove and is coloured green → ochre → red by its predicted risk. Ochre sits exactly at that artery's own decision cut-off, and the colour reaches full green 30 points below it and full red 30 points above it;
   - click an artery, its label, or its row in the results, and the camera turns to it, highlights the heart muscle it supplies, and the explanation switches to that artery;
   - the **Risk map** toggle colours every territory by its artery's risk;
-  - there is an optional translucent torso and ribs for context, and the heart beats at the patient's pulse rate (off when the system asks for reduced motion).
-- **A guided assessment** built on [Kard](https://github.com/7-Bala/Kard)'s question flow (MIT): a one-screen landing page beside a render of the app's own heart, then the 11 key questions one per screen (animated illustrations, choice cards, a number stepper, "Not sure? Use a typical value"), an optional page for the other ~40 inputs, and a results page with a risk ring, the 3D heart, the three arteries and the main reasons. A separate page shows how accurate the model is. Built with React, Tailwind CSS, shadcn/ui and framer-motion; works on desktop, tablet and phone.
+  - the heart beats at the patient's pulse rate (off when the system asks for reduced motion).
+- **A guided assessment** built on [Kard](https://github.com/7-Bala/Kard)'s question flow (MIT): a one-screen landing page beside the live 3D heart (arteries named, no patient data), the patient's name (required; a label that stays in the browser), then the 11 key questions one per screen (animated illustrations, choice cards, a number stepper, "Not sure? Use a typical value"), an optional page for the other ~40 inputs, and a results page with a risk ring, the 3D heart, the three arteries and the main reasons. A separate page shows how accurate the model is. Built with React, Tailwind CSS, shadcn/ui and framer-motion; works on desktop, tablet and phone.
 - **Explains** every prediction with **SHAP** values in percentage points of the risk shown: the bars add up exactly to the difference between this patient and a typical study patient. Features that describe the same clinical fact are merged into one row (for example chest pain type), so nothing is counted twice. It also shows the "points" behind the published CAD Consortium risk score.
 - **Shows what it can and cannot localise:** the results page switches between each artery's risk and **"If CAD is present"**, which artery is most likely narrowed, compared with the average patient with CAD (see [Which artery?](#which-artery)).
 - **Updates in real time** (about 0.15 s per prediction) as you edit any value, and warns when an input is outside the range seen in training. Risks are shown as ">99%" or "<1%" at the extremes, never 100% or 0%.
@@ -87,20 +87,20 @@ That is only modestly better than guessing (0.5), and predicting single- against
 
 ## Against the scores clinicians use today
 
-Before angiography, guidelines estimate risk from age, sex and the type of chest pain. We compared flowstate on the same 303 patients with the two standard scores: the **ESC 2019 pre-test probability** (Knuuti et al., *Eur Heart J* 2020, Table 5) and the **CAD Consortium clinical score** (Genders et al., *BMJ* 2012). flowstate's numbers are its held-out (cross-validated) predictions, so no patient was scored by a model that had seen them.
+Before angiography, guidelines estimate risk from age, sex and the type of chest pain. We compared Tria on the same 303 patients with the two standard scores: the **ESC 2019 pre-test probability** (Knuuti et al., *Eur Heart J* 2020, Table 5) and the **CAD Consortium clinical score** (Genders et al., *BMJ* 2012). Tria's numbers are its held-out (cross-validated) predictions, so no patient was scored by a model that had seen them.
 
 | Method | ROC-AUC (95% CI) | Specificity at 90% sensitivity* |
 |---|---|---|
 | ESC 2019 pre-test probability | 0.82 (0.77–0.87) | 53% |
 | CAD Consortium clinical score | 0.88 (0.83–0.92) | 71% |
-| **flowstate** | **0.93** (0.90–0.96) | **79%** |
+| **Tria** | **0.93** (0.90–0.96) | **79%** |
 
 \*Each method at its own best cut-off on these patients: the share of patients without CAD it would spare an angiogram while still catching 90% of CAD.
 
 - **AUC gain:** +0.11 over ESC (paired bootstrap 95% CI 0.07 to 0.16) and +0.06 over CAD Consortium (0.03 to 0.08). Neither interval includes zero.
-- **Fewer missed patients:** the ESC rule "test when pre-test probability is above 15%" misses 53 of 216 CAD patients (sensitivity 76%). flowstate's rule-out cut-off misses about 20 (sensitivity 91%) and still spares more patients without CAD an angiogram (specificity 81% against 71%). flowstate's figures come from nested cross-validation, where the cut-off is chosen inside the training folds; picking the cut-off on the same held-out predictions would have flattered it (14 missed).
-- **Decision curve:** flowstate has the highest net benefit at every threshold from 10% to 85%, even after both scores are recalibrated to these patients by cross-validated logistic recalibration. Published scores were built for lower-risk populations, so recalibrating them makes the comparison fair to them.
-- **Why it wins:** the CAD Consortium score is one of flowstate's own inputs. The gain comes from what the scores leave out: ECG, echocardiography and laboratory results.
+- **Fewer missed patients:** the ESC rule "test when pre-test probability is above 15%" misses 53 of 216 CAD patients (sensitivity 76%). Tria's rule-out cut-off misses about 20 (sensitivity 91%) and still spares more patients without CAD an angiogram (specificity 81% against 71%). Tria's figures come from nested cross-validation, where the cut-off is chosen inside the training folds; picking the cut-off on the same held-out predictions would have flattered it (14 missed).
+- **Decision curve:** Tria has the highest net benefit at every threshold from 10% to 85%, even after both scores are recalibrated to these patients by cross-validated logistic recalibration. Published scores were built for lower-risk populations, so recalibrating them makes the comparison fair to them.
+- **Why it wins:** the CAD Consortium score is one of Tria's own inputs. The gain comes from what the scores leave out: ECG, echocardiography and laboratory results.
 
 Reproduce with `python clinical_baseline.py` (seconds), which writes `reports/clinical_baseline.json`. The accuracy page in the app shows the same results.
 
@@ -198,8 +198,8 @@ python train.py                  # copies the reports into models/metadata.json
 With Docker, which is also how the Hugging Face Space runs:
 
 ```bash
-docker build -t flowstate .
-docker run -p 7860:7860 flowstate
+docker build -t tria .
+docker run -p 7860:7860 tria
 ```
 
 ## API
@@ -219,7 +219,7 @@ app/main.py        FastAPI server and prediction API
 train.py           trains and saves the final models (models/)
 evaluate.py        repeated nested cross-validation → reports/evaluation_v2.json
 external_validation.py  leave-one-hospital-out check on 5 hospitals → reports/external_validation.json
-clinical_baseline.py    flowstate against the ESC 2019 and CAD Consortium scores → reports/clinical_baseline.json
+clinical_baseline.py    Tria against the ESC 2019 and CAD Consortium scores → reports/clinical_baseline.json
 tests/             pytest checks of the model and API (python -m pytest)
 web/               front end: React + Vite + Tailwind CSS + shadcn/ui (src/App.tsx, src/components/, src/lib/heart.js = the 3D scene)
 static/            the built web page (npm run build in web/), served by FastAPI

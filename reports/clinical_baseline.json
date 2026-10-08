@@ -1,7 +1,7 @@
 {
   "n_patients": 303,
   "cad_rate": 0.713,
-  "flowstate_predictions": "held-out (5-fold cross-validated) predictions from train.py",
+  "tria_predictions": "held-out (5-fold cross-validated) predictions from train.py",
   "esc_symptom_classes": {
     "asymptomatic": 5,
     "atypical": 93,
@@ -18,7 +18,7 @@
       ],
       "mean_predicted": 0.225,
       "specificity_at_90_sensitivity": 0.529,
-      "flowstate_auc_minus_this": [
+      "tria_auc_minus_this": [
         0.113,
         0.074,
         0.156
@@ -32,13 +32,13 @@
       ],
       "mean_predicted": 0.29,
       "specificity_at_90_sensitivity": 0.713,
-      "flowstate_auc_minus_this": [
+      "tria_auc_minus_this": [
         0.055,
         0.031,
         0.081
       ]
     },
-    "flowstate": {
+    "Tria": {
       "auc": 0.934,
       "auc_ci95": [
         0.9,
@@ -54,7 +54,7 @@
     "specificity": 0.713,
     "missed_cad_patients": 53
   },
-  "flowstate_rule_out_cut_off": {
+  "tria_rule_out_cut_off": {
     "source": "evaluate.py: 10x repeated nested 5-fold CV, cut-off chosen inside the training folds",
     "mean_cut_off": 0.622,
     "sensitivity": 0.909,
@@ -118,7 +118,7 @@
         0.3861,
         0.3113
       ],
-      "flowstate": [
+      "Tria": [
         0.6887,
         0.6812,
         0.6733,
@@ -158,6 +158,6 @@
   },
   "notes": [
     "ESC classes: under-30s use the 30-39 row; patients with no chest pain and no dyspnoea get the non-anginal (lowest) value.",
-    "The CAD Consortium score is also one of flowstate's inputs; flowstate adds ECG, echo and laboratory information on top of it."
+    "The CAD Consortium score is also one of Tria's inputs; Tria adds ECG, echo and laboratory information on top of it."
   ]
 }

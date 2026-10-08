@@ -2,10 +2,12 @@
 import type { HeartViewer } from "./heart.js"
 import { describeLabels, nameOf, pct, pctRisk, riskHex, signed, TARGETS } from "./format"
 import type { Example, Inputs, Meta, Prediction } from "./types"
+import { drawWordmark } from "./wordmark"
 
 type RGB = [number, number, number]
 const rgb = (hex: string): RGB => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as RGB
 const pdfText = (s: string) => s.replace(/−/g, "-").replace(/≥/g, ">=")   // keep to the standard PDF fonts
+const latin1 = (name: string) => (/^[\x20-\x7e\xa0-\xff]*$/.test(name) ? name : "Patient")   // they cannot draw other scripts
 
 // One image of the heart with its artery labels drawn in, cropped to the heart, on white
 async function heartImage(viewer: HeartViewer, stage: HTMLElement) {
@@ -77,8 +79,8 @@ export async function savePdf({ viewer, stage, meta, prediction: p, inputs, pati
   const heldout = example?.heldout && !edited ? example.heldout : null
 
   // header
-  doc.setFont("helvetica", "bold").setFontSize(18).setTextColor(...ink).text("flowstate", M, 17)
-  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...ink2).text("Coronary artery disease risk report", M + 33, 17)
+  const brand = drawWordmark(doc, M, 17, 6.4, ink)
+  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...ink2).text("Coronary artery disease risk report", M + brand + 5, 17)
   doc.text(new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }), W - M, 17, { align: "right" })
   doc.setDrawColor(...rule).setLineWidth(0.4).line(M, 20, W - M, 20)
   doc.setFillColor(254, 243, 199).roundedRect(M, 22.5, W - 2 * M, 7, 1.5, 1.5, "F")
@@ -86,7 +88,7 @@ export async function savePdf({ viewer, stage, meta, prediction: p, inputs, pati
 
   // patient
   const sex = inputs.Sex === 1 ? "man" : "woman"
-  doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(...ink).text(`${patientLabel}, ${Math.round(inputs.Age)}-year-old ${sex}`, M, 38)
+  doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(...ink).text(`${latin1(patientLabel)}, ${Math.round(inputs.Age)}-year-old ${sex}`, M, 38)
   if (example) {
     doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...ink2)
       .text(`Angiography result: ${describeLabels(example.labels)}.${edited ? " Values edited since loading." : ""}`, M, 43)
@@ -168,9 +170,9 @@ export async function savePdf({ viewer, stage, meta, prediction: p, inputs, pati
       + (ext ? ` Basic 7-input model checked on 5 hospitals (${ext.n_patients.toLocaleString("en")} patients): mean AUC ${ext.loco_auc[ext.chosen_model].Mean.toFixed(2)}.` : "")),
       M, 195.5, { maxWidth: W - 2 * M })
   }
-  doc.text("Data: Z-Alizadeh Sani extension (UCI #411, CC BY 4.0). Heart model: HuBMAP Human Reference Atlas, female heart v1.0 by Kristen Browne (CC BY 4.0). Made with flowstate.",
+  doc.text("Data: Z-Alizadeh Sani extension (UCI #411, CC BY 4.0). Heart model: HuBMAP Human Reference Atlas, female heart v1.0 by Kristen Browne (CC BY 4.0). Made with Tria.",
     M, 200, { maxWidth: W - 2 * M })
 
-  const slug = patientLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
-  doc.save(`flowstate-${slug}-${new Date().toISOString().slice(0, 10)}.pdf`)
+  const slug = patientLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "patient"
+  doc.save(`tria-${slug}-${new Date().toISOString().slice(0, 10)}.pdf`)
 }
