@@ -70,17 +70,21 @@ export function QuestionScreen({
   const chosen = q.kind === "choice" && entered && !isNotSure ? chosenOption(q, inputs) : -1
   const onKeys = q.kind === "multi" && !isNotSure ? q.options.filter((o) => inputs[o.key] === 1).map((o) => o.key) : []
   const noneChosen = q.kind === "multi" && entered && !isNotSure && onKeys.length === 0
-  const answered = isNotSure || (q.kind === "number" ? num !== "" : q.kind === "choice" ? chosen >= 0 : entered || onKeys.length > 0)
+  // a number must be valid even after "Not sure" (which fills in the typical value), in case it was then retyped
+  const answered = q.kind === "number" ? num !== "" : isNotSure || (q.kind === "choice" ? chosen >= 0 : entered || onKeys.length > 0)
   const last = index === total - 1
+
+  useEffect(() => { if (answered) setShowError(false) }, [answered])      // the note goes as soon as the problem is fixed
+  const missing = q.kind === "number" ? "Enter a valid number to continue" : q.kind === "multi" ? "Choose at least one option" : "Choose an answer to continue"
+  const flagMissing = () => {
+    setShowError(true)
+    if (errTimer.current) clearTimeout(errTimer.current)
+    errTimer.current = setTimeout(() => setShowError(false), 3000)
+  }
 
   const next = () => {
     if (advancing) return
-    if (!answered) {
-      setShowError(true)
-      if (errTimer.current) clearTimeout(errTimer.current)
-      errTimer.current = setTimeout(() => setShowError(false), 3000)
-      return
-    }
+    if (!answered) { flagMissing(); return }
     if (!isNotSure && q.kind === "number" && num !== "") onAnswer({ [q.key]: num })
     if (!isNotSure && q.kind === "multi") onAnswer(Object.fromEntries(q.options.map((o) => [o.key, onKeys.includes(o.key) ? 1 : 0])))
     onNext()
@@ -220,6 +224,7 @@ export function QuestionScreen({
 
         {onUpdate && (
           <button onClick={() => {
+            if (!answered) { flagMissing(); return }       // never re-score with a value that was not entered
             if (!isNotSure && q.kind === "number" && num !== "") onAnswer({ [q.key]: num })
             onUpdate()
           }}
@@ -240,8 +245,8 @@ export function QuestionScreen({
                   <motion.div initial={{ opacity: 0, y: -40 }}
                     animate={{ opacity: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 12, mass: 1.2 } }}
                     exit={{ opacity: 0, y: -40, transition: { type: "tween", ease: "anticipate", duration: 0.35 } }}
-                    className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium whitespace-nowrap text-white shadow-md">
-                    <AlertCircle className="size-4" /> Please choose an answer
+                    role="alert" className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium whitespace-nowrap text-white shadow-md">
+                    <AlertCircle className="size-4" /> {missing}
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -193,7 +193,7 @@ export function riskColor(score) {
 }
 
 // ---------------------------------------------------------------- viewer
-export function createHeartViewer(container, { onSelect, reduceMotion = false, zoom = true } = {}) {
+export function createHeartViewer(container, { onSelect, reduceMotion = false, zoom = true, labels: showLabels = true } = {}) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -202,6 +202,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
 
   const labelRenderer = new CSS2DRenderer();
   labelRenderer.domElement.className = "label-layer";
+  if (!showLabels) labelRenderer.domElement.style.display = "none";     // `display`, because `visibility` is toggled while the model loads
   container.appendChild(labelRenderer.domElement);
 
   const scene = new THREE.Scene();
@@ -367,6 +368,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
       new THREE.BufferGeometry().setFromPoints([onArtery, anchorPos.clone()]),
       new THREE.LineBasicMaterial({ color: 0x14171c, transparent: true, opacity: 0.6 }),
     );
+    leader.visible = showLabels;
     parent.add(leader);
     const div = document.createElement("button");
     div.className = "vessel-label";

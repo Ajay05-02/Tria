@@ -73,6 +73,13 @@ def test_non_finite_input_is_rejected():
     assert err.value.status_code == 422
 
 
+@pytest.mark.parametrize("bad, why", [({"Age": -5.0}, "negative"), ({"DM": 2.0}, "0 (no) or 1 (yes)"), ({"DM": 0.5}, "0 (no) or 1 (yes)")])
+def test_impossible_input_is_rejected(bad, why):
+    with pytest.raises(HTTPException) as err:
+        predict(PredictRequest(inputs=bad))
+    assert err.value.status_code == 422 and why in err.value.detail
+
+
 def test_reported_metrics_cover_the_brief():
     ev = META["evaluation"]
     deployed = {"Cath": ev["v2_calibrated_with_threshold"]["Cath"], **ev["v2_two_step_vessels (deployed)"]}

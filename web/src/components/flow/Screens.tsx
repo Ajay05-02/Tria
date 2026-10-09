@@ -35,7 +35,12 @@ export function NameScreen({ name, onChange, onBack, onNext }: { name: string; o
           It labels the results and the PDF report. The name stays in this browser and is never sent to the server.
         </p>
       </div>
-      <form className="flex flex-col justify-center" noValidate onSubmit={(e) => { e.preventDefault(); if (/\p{L}/u.test(name)) onNext(); else setProblem("missing") }}>
+      <form className="flex flex-col justify-center" noValidate onSubmit={(e) => {
+        e.preventDefault()
+        if (!/\p{L}/u.test(name)) { setProblem("missing"); return }
+        onChange(name.trim().replace(/\s+/g, " "))
+        onNext()
+      }}>
         <Input autoFocus required value={name} onChange={(e) => {
           // a name is letters, with spaces, hyphens, apostrophes and full stops between them: no digits or symbols
           const clean = e.target.value.replace(NOT_NAME, "").replace(/^\s+/, "")

@@ -242,6 +242,10 @@ def predict(req: PredictRequest):
             ignored.append(k)
         elif not math.isfinite(v):
             raise HTTPException(status_code=422, detail=f"{k} must be a finite number")
+        elif META["input_info"][k]["kind"] == "binary" and v not in (0, 1):
+            raise HTTPException(status_code=422, detail=f"{k} must be 0 (no) or 1 (yes)")
+        elif v < 0:
+            raise HTTPException(status_code=422, detail=f"{k} cannot be negative")
         else:
             row[k] = float(v)
 

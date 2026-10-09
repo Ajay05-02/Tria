@@ -1,7 +1,7 @@
 // Results: the risk and its reasons beside the 3D heart (layout after Kard, github.com/7-Bala/Kard, MIT)
 import type { RefObject } from "react"
 import { motion } from "framer-motion"
-import { FileDown, PencilLine, RotateCcw, TrendingDown, TrendingUp } from "lucide-react"
+import { AlertTriangle, FileDown, PencilLine, RotateCcw, TrendingDown, TrendingUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -78,6 +78,18 @@ export function ResultsScreen(p: Props) {
             </p>
           </div>
         </div>
+
+        {p.prediction.warnings.length > 0 && (
+          <div role="alert" className="flex gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <div>
+              <p className="font-medium">Treat this result with extra caution</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                {p.prediction.warnings.map((w) => <li key={w}>{w}</li>)}
+              </ul>
+            </div>
+          </div>
+        )}
 
         <section aria-labelledby="why-title">
           <div className="flex flex-wrap items-center justify-between gap-3">

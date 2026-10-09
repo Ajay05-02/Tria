@@ -19,5 +19,5 @@ export function riskScore(p: number, threshold: number): number
 export function riskColor(score: number): Color
 export function createHeartViewer(
   container: HTMLElement,
-  options?: { onSelect?: (vessel: string | null) => void; reduceMotion?: boolean; zoom?: boolean },
+  options?: { onSelect?: (vessel: string | null) => void; reduceMotion?: boolean; zoom?: boolean; labels?: boolean },
 ): HeartViewer

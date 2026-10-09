@@ -175,21 +175,37 @@ const choiceClass = (assumed: boolean) =>
     ? "data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/30"
     : "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:border-primary"
 
+// A typed number. Only digits and one decimal point can be entered. A value outside the range the model was trained
+// on is allowed, because the server scores it and flags it, but the row says so at once. An empty or unfinished
+// entry is never sent: on leaving the field it goes back to the last good value.
 function NumberInput({ field, value, assumed, labelId, onChange }: { field: Field; value: number; assumed: boolean; labelId: string; onChange: (v: number) => void }) {
-  const [text, setText] = useState(String(Math.round(value * 100) / 100))
-  useEffect(() => { setText(String(Math.round(value * 100) / 100)) }, [value])
+  const shown = String(Math.round(value * 100) / 100)
+  const [text, setText] = useState(shown)
+  const [rejected, setRejected] = useState(false)       // something other than a number was typed
+  const focused = useRef(false)
+  useEffect(() => { if (!focused.current) setText(shown) }, [shown])
   const v = parseFloat(text)
+  const lo = Math.round(field.min * 10) / 10, hi = Math.round(field.max * 10) / 10
   const outOfRange = Number.isFinite(v) && (v < field.min || v > field.max)
+  const problem = rejected ? "Numbers only" : outOfRange ? `Outside the range the model has seen (${lo} to ${hi})` : ""
+  const msgId = `${labelId}-msg`
   return (
-    <Input type="number" inputMode="decimal" step={field.step} value={text} aria-labelledby={labelId}
-      readOnly={field.key === "BMI"}
-      title={`Range seen in training: ${field.min} to ${field.max}`}
-      aria-invalid={!Number.isFinite(v) || outOfRange || undefined}
-      className={cn("h-8 w-28 text-right tabular-nums", assumed && "text-muted-foreground", field.key === "BMI" && "bg-muted/50")}
-      onChange={(e) => {
-        setText(e.target.value)
-        const n = parseFloat(e.target.value)
-        if (Number.isFinite(n)) onChange(n)
-      }} />
+    <div className="flex flex-col items-end gap-1">
+      <Input type="text" inputMode="decimal" autoComplete="off" value={text} aria-labelledby={labelId}
+        readOnly={field.key === "BMI"}
+        aria-invalid={problem !== "" || undefined} aria-describedby={problem ? msgId : undefined}
+        className={cn("h-8 w-28 text-right tabular-nums", assumed && "text-muted-foreground", field.key === "BMI" && "bg-muted/50")}
+        onFocus={() => { focused.current = true }}
+        onBlur={() => { focused.current = false; setRejected(false); if (!Number.isFinite(parseFloat(text))) setText(shown) }}
+        onChange={(e) => {
+          const raw = e.target.value
+          const clean = raw.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1").slice(0, 7)
+          setText(clean)
+          setRejected(clean !== raw)
+          const n = parseFloat(clean)
+          if (Number.isFinite(n)) onChange(n)
+        }} />
+      {problem && <p id={msgId} role="alert" className="max-w-[14rem] text-right text-xs leading-snug text-destructive">{problem}</p>}
+    </div>
   )
 }

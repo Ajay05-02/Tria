@@ -24,11 +24,26 @@ const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").match
 const blankInputs = (meta: Meta): Inputs =>
   Object.fromEntries(meta.fields.map((f) => [f.key, f.kind === "binary" ? 0 : f.median]))
 
-const predict = async (inputs: Inputs): Promise<Prediction> => {
-  const r = await fetch("api/predict", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inputs }) })
-  if (!r.ok) throw new Error(`The server could not score this patient (error ${r.status}).`)
-  return r.json()
+// Every request goes through here, so each failure gets a message a person can act on: no connection, a value
+// the server refused (it says which), or a server fault.
+const request = async <T,>(url: string, what: string, init?: RequestInit): Promise<T> => {
+  let r: Response
+  try {
+    r = await fetch(url, init)
+  } catch {
+    throw new Error(`Could not reach the server to ${what}. Check that it is running, then try again.`)
+  }
+  if (r.ok) return r.json()
+  let detail = ""
+  try {
+    const d = (await r.json()).detail
+    detail = typeof d === "string" ? d : Array.isArray(d) ? d.map((x) => `${(x.loc ?? []).slice(1).join(" ")}: ${x.msg}`).join("; ") : ""
+  } catch { /* no readable body */ }
+  throw new Error(r.status === 422 && detail ? `The server did not accept a value: ${detail}` : `The server could not ${what} (error ${r.status}).`)
 }
+
+const predict = (inputs: Inputs) =>
+  request<Prediction>("api/predict", "score this patient", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inputs }) })
 
 export default function App() {
   const [meta, setMeta] = useState<Meta | null>(null)
@@ -57,10 +72,9 @@ export default function App() {
   inputsRef.current = inputs
 
   useEffect(() => {
-    fetch("api/meta")
-      .then((r) => { if (!r.ok) throw new Error(); return r.json() })
-      .then((m: Meta) => { setMeta(m); setInputs(blankInputs(m)) })
-      .catch(() => setError("The model could not be loaded. Check that the server is running, then reload the page."))
+    request<Meta>("api/meta", "load the model")
+      .then((m) => { setMeta(m); setInputs(blankInputs(m)) })
+      .catch((e: Error) => setError(`${e.message} Reload the page once the server is back.`))
   }, [])
 
   useEffect(() => { window.scrollTo({ top: 0 }) }, [screen, qIndex])
@@ -102,9 +116,13 @@ export default function App() {
   }
 
   const openExample = async (index: number) => {
-    const r = await fetch(`api/patients/${index}`)
-    if (!r.ok) { setError(`Could not load example patient ${index + 1}.`); return }
-    const d = await r.json()
+    let d: { index: number; inputs: Inputs; labels: Example["labels"]; heldout: Example["heldout"] }
+    try {
+      d = await request(`api/patients/${index}`, `load example patient ${index + 1}`)
+    } catch (e) {
+      setError((e as Error).message)
+      return
+    }
     setExample({ index: d.index, labels: d.labels, heldout: d.heldout })
     setEdited(false); setTouched(new Set()); setNotSureSet(new Set()); setInputs(d.inputs); setPatientName("")
     setSelected(null); setExplain("Cath"); setMode("risk")
@@ -176,7 +194,7 @@ export default function App() {
         onHome={() => setScreen("hero")} onJump={jump} onNavigate={go}>
         {error && (
           <div className="fixed top-20 left-1/2 z-50 w-full max-w-md -translate-x-1/2 px-4 animate-in fade-in slide-in-from-top-4">
-            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 shadow-sm">
+            <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 shadow-sm">
               <AlertCircle className="mt-0.5 size-5 shrink-0 text-red-500" />
               <p className="flex-1 text-sm font-medium">{error}</p>
               <button onClick={() => setError(null)} className="text-red-400 transition-colors hover:text-red-600" aria-label="Dismiss">&times;</button>

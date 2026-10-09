@@ -1,11 +1,10 @@
-// Landing page: the message and one call to action beside the live 3D heart. It carries no patient data:
-// the arteries are named but stay neutral until someone has answered the questions
+// Landing page: the message and one call to action beside the live 3D heart. It carries no patient data and no
+// labels: the arteries stay neutral until someone has answered the questions
 import { useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { labelNames } from "@/lib/format"
 import { createHeartViewer } from "@/lib/heart.js"
 import type { Meta } from "@/lib/types"
 
@@ -27,10 +26,9 @@ export function HeroScreen({ meta, onStart }: Props) {
   useEffect(() => {
     let picked: string | null = null
     const viewer = createHeartViewer(stageRef.current!, {
-      reduceMotion, zoom: false,
+      reduceMotion, zoom: false, labels: false,
       onSelect: (v) => { picked = v === picked ? null : v; viewer.select(picked) },
     })
-    viewer.setLabelNames(labelNames(false))
     viewer.setBeating(!reduceMotion)
     viewer.setTerritories(false)
     return () => viewer.dispose()
@@ -58,7 +56,7 @@ export function HeroScreen({ meta, onStart }: Props) {
 
         <motion.div {...rise(0.2)} className="overflow-hidden rounded-2xl border bg-card">
           <div ref={stageRef} className="heart-stage relative aspect-[4/3] w-full" role="img"
-            aria-label="Interactive 3D heart with the three main coronary arteries labelled: LAD, LCX and RCA. Drag to rotate, click an artery." />
+            aria-label="Interactive 3D heart with its coronary arteries. Drag to rotate." />
         </motion.div>
       </section>
 

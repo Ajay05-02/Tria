@@ -181,26 +181,95 @@ export const IllusCholesterol = ({ className }: Props) => (
   </Scene>
 )
 
+// The burning end uses the colours of an ember, the one place the drawings leave the ink-and-rose palette: a hot
+// core, a charred edge, scorched paper and crumbling ash. The smoke is a thin steady stream that breaks into soft
+// plumes; each plume fades in and out on its own clock, so the column never visibly restarts.
 export const IllusSmoking = ({ className }: Props) => (
-  <Scene className={className} label="A lit cigarette with a thin line of smoke rising from its tip">
-    <defs><linearGradient id="il-smoke" gradientUnits="userSpaceOnUse" x1="0" y1="132" x2="0" y2="14">
-    <stop className="stop-mute" offset="0" stopOpacity="0.85"/>
-    <stop className="stop-mute" offset="0.6" stopOpacity="0.4"/>
-    <stop className="stop-mute" offset="1" stopOpacity="0"/>
-    </linearGradient>
+  <Scene className={className} label="A lit cigarette: its tip glows and flickers, and smoke rises from it in a thin stream that spreads into soft plumes">
+    <defs>
+      <linearGradient id="il-smoke" gradientUnits="userSpaceOnUse" x1="0" y1="128" x2="0" y2="56">
+        <stop className="stop-mute" offset="0" stopOpacity="0.8"/><stop className="stop-mute" offset="0.6" stopOpacity="0.35"/><stop className="stop-mute" offset="1" stopOpacity="0"/>
+      </linearGradient>
+      <filter id="il-smoke-soft" filterUnits="userSpaceOnUse" x="150" y="-40" width="130" height="190">
+        <feGaussianBlur stdDeviation="2.4" result="soft"/>
+        <feTurbulence type="fractalNoise" baseFrequency="0.022 0.034" numOctaves="2" seed="7" result="noise">
+          {motion && <animate attributeName="baseFrequency" dur="11s" repeatCount="indefinite" values="0.022 0.034;0.03 0.026;0.022 0.034" />}
+        </feTurbulence>
+        <feDisplacementMap in="soft" in2="noise" scale="26" xChannelSelector="R" yChannelSelector="G"/>
+        <feGaussianBlur stdDeviation="1.1"/>
+      </filter>
+      <filter id="il-smoke-fine" filterUnits="userSpaceOnUse" x="180" y="40" width="70" height="100"><feGaussianBlur stdDeviation="0.6"/></filter>
+      <radialGradient id="il-glow"><stop offset="0" stopColor="#ff7d2e" stopOpacity="0.7"/><stop offset="0.4" stopColor="#ff7d2e" stopOpacity="0.26"/><stop offset="1" stopColor="#ff7d2e" stopOpacity="0"/></radialGradient>
+      <linearGradient id="il-ash" gradientUnits="userSpaceOnUse" x1="0" y1="140" x2="0" y2="165">
+        <stop offset="0" stopColor="#d6d6da"/><stop offset="0.55" stopColor="#b6b6bd"/><stop offset="1" stopColor="#8e8e97"/>
+      </linearGradient>
+      <linearGradient id="il-scorch"><stop offset="0" stopColor="#7a4a2c" stopOpacity="0"/><stop offset="0.7" stopColor="#6a3c22" stopOpacity="0.35"/><stop offset="1" stopColor="#3d2012" stopOpacity="0.8"/></linearGradient>
+      {/* the burning coal: drifting noise mapped through the colours of an ember, from char through red and orange to yellow */}
+      <filter id="il-coal" filterUnits="userSpaceOnUse" x="199" y="136" width="25" height="32">
+        <feTurbulence type="fractalNoise" baseFrequency="0.32 0.44" numOctaves="3" seed="11">
+          {motion && <animate attributeName="baseFrequency" dur="6s" repeatCount="indefinite" values="0.32 0.44;0.4 0.36;0.32 0.44" />}
+        </feTurbulence>
+        <feColorMatrix type="matrix" values="2.6 0 0 0 -0.78  2.6 0 0 0 -0.78  2.6 0 0 0 -0.78  0 0 0 0 1"/>
+        <feComponentTransfer>
+          <feFuncR type="table" tableValues="0.2 0.62 0.93 1 1"/><feFuncG type="table" tableValues="0.04 0.1 0.33 0.6 0.85"/><feFuncB type="table" tableValues="0.02 0.03 0.06 0.13 0.38"/>
+        </feComponentTransfer>
+        <feComposite in2="SourceAlpha" operator="in"/>
+      </filter>
+      {/* heat that swells and fades over the coal: brightest just behind the burn line */}
+      <linearGradient id="il-heat" gradientUnits="userSpaceOnUse" x1="202" y1="0" x2="220" y2="0">
+        <stop offset="0" stopColor="#ff9a2e" stopOpacity="0"/><stop offset="0.3" stopColor="#ffb040" stopOpacity="0.75"/><stop offset="0.7" stopColor="#ff7a22" stopOpacity="0.4"/><stop offset="1" stopColor="#ff7a22" stopOpacity="0"/>
+      </linearGradient>
+      {/* the ash thins out towards the burn line, so the coal glows through it there */}
+      <linearGradient id="il-ash-thin" gradientUnits="userSpaceOnUse" x1="208" y1="0" x2="219" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0"/><stop offset="0.55" stopColor="#fff" stopOpacity="0.55"/><stop offset="1" stopColor="#fff"/></linearGradient>
+      <mask id="il-ash-mask" maskUnits="userSpaceOnUse" x="206" y="136" width="34" height="32"><rect x="206" y="136" width="34" height="32" fill="url(#il-ash-thin)"/></mask>
+      {/* fine grain for the ash, so it reads as crumbly, not as a smooth cap */}
+      <filter id="il-ash-grain" filterUnits="userSpaceOnUse" x="206" y="136" width="34" height="32">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="g"/>
+        <feColorMatrix in="g" type="matrix" values="0 0 0 0 0.25  0 0 0 0 0.25  0 0 0 0 0.28  0 0 0 2.2 -0.95" result="speck"/>
+        <feComposite in="speck" in2="SourceAlpha" operator="in" result="specks"/>
+        <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="specks"/></feMerge>
+      </filter>
     </defs>
-    <g transform="translate(14 -4)">
-    <path className="il-smoke-a" stroke="url(#il-smoke)" strokeWidth="3" d="M226 128C212 110 242 96 228 76C216 58 240 44 230 18"/>
-    <path className="il-smoke-b" stroke="url(#il-smoke)" strokeWidth="2.25" d="M236 124C228 110 248 100 240 84C234 72 246 64 242 50"/>
-    <g transform="rotate(-10 150 152)">
-    <path className="f-bg" d="M55 141H204V163H55A3 3 0 0 1 52 160V144A3 3 0 0 1 55 141Z"/>
-    <rect className="f-wall" x="52" y="141" width="52" height="22" rx="3"/>
-    <path className="f-tint s-ink" d="M208 141H219A9 11 0 0 1 219 163H208Z"/>
-    <path className="s-ink" d="M205 141H55A3 3 0 0 0 52 144V160A3 3 0 0 0 55 163H205"/>
-    <path className="s-line" d="M104 141V163M111 141V163"/>
-    <rect className="f-bg" x="203" y="139.25" width="8" height="25.5"/>
-    <rect className="f-rose il-ember" x="203" y="139.25" width="8" height="25.5"/>
-    </g>
+    <g transform="translate(10 14)">
+      {/* uneven sizes and gaps, so denser and thinner patches travel up the column */}
+      <g filter="url(#il-smoke-soft)">
+        <circle className="f-mute il-puff il-puff-a" style={{ animationDelay: "0.00s" }} cx="209" cy="122" r="7.5"/>
+        <circle className="f-mute il-puff il-puff-b" style={{ animationDelay: "-0.49s" }} cx="210" cy="122" r="5"/>
+        <circle className="f-mute il-puff il-puff-c" style={{ animationDelay: "-1.33s" }} cx="211" cy="122" r="8.5"/>
+        <circle className="f-mute il-puff il-puff-b" style={{ animationDelay: "-1.75s" }} cx="209" cy="122" r="6"/>
+        <circle className="f-mute il-puff il-puff-a" style={{ animationDelay: "-2.52s" }} cx="210" cy="122" r="9"/>
+        <circle className="f-mute il-puff il-puff-c" style={{ animationDelay: "-3.29s" }} cx="211" cy="122" r="5.5"/>
+        <circle className="f-mute il-puff il-puff-a" style={{ animationDelay: "-3.64s" }} cx="209" cy="122" r="7"/>
+        <circle className="f-mute il-puff il-puff-b" style={{ animationDelay: "-4.41s" }} cx="210" cy="122" r="8"/>
+        <circle className="f-mute il-puff il-puff-c" style={{ animationDelay: "-5.18s" }} cx="211" cy="122" r="5"/>
+        <circle className="f-mute il-puff il-puff-a" style={{ animationDelay: "-5.67s" }} cx="209" cy="122" r="9"/>
+        <circle className="f-mute il-puff il-puff-b" style={{ animationDelay: "-6.44s" }} cx="210" cy="122" r="6.5"/>
+      </g>
+      <g filter="url(#il-smoke-fine)">
+        <path className="il-smoke-a" stroke="url(#il-smoke)" strokeWidth="3" d="M210 128C203 114 220 104 212 88C206 76 217 66 212 54"/>
+        <path className="il-smoke-b" stroke="url(#il-smoke)" strokeWidth="1.75" d="M215 127C211 117 223 109 218 97C214 87 221 81 219 71"/>
+      </g>
+      <g transform="rotate(-10 150 152)">
+        <path className="f-bg" d="M55 141H204V163H55A3 3 0 0 1 52 160V144A3 3 0 0 1 55 141Z"/>
+        <rect x="52" y="141" width="52" height="22" rx="3" fill="#e4c8a8"/>
+        <path fill="#b98d62" opacity="0.6" d="M62 147h2v2h-2zM74 156h2v2h-2zM83 146h2v2h-2zM93 154h2v2h-2zM68 152h1.5v1.5h-1.5zM88 158h1.5v1.5h-1.5zM97 147h1.5v1.5h-1.5zM78 150h1.5v1.5h-1.5zM58 157h1.5v1.5h-1.5z"/>
+        <rect x="182" y="141" width="21" height="22" fill="url(#il-scorch)"/>
+        <path className="s-ink" d="M202 141H55A3 3 0 0 0 52 144V160A3 3 0 0 0 55 163H202"/>
+        <path className="s-line" d="M104 141V163M111 141V163"/>
+        <circle className="il-glow" cx="210" cy="152" r="26" fill="url(#il-glow)"/>
+        {/* the coal: a dull base that never goes dark, the glowing texture, and heat breathing over it */}
+        <path fill="#3a0f08" d="M202.4 139.4C204.6 143 200.8 147 203.2 151C205.4 155 201.2 159 203 164.6L221 164.4V139.9Z"/>
+        <path fill="#000" filter="url(#il-coal)" d="M202.4 139.4C204.6 143 200.8 147 203.2 151C205.4 155 201.2 159 203 164.6L221 164.4V139.9Z"/>
+        <path className="il-smoulder" fill="url(#il-heat)" d="M202.4 139.4C204.6 143 200.8 147 203.2 151C205.4 155 201.2 159 203 164.6L221 164.4V139.9Z"/>
+        {/* ash: a crumbly grey crust with no hard outline, thinning towards the coal */}
+        <g mask="url(#il-ash-mask)">
+          <path fill="url(#il-ash)" filter="url(#il-ash-grain)" d="M208 139.9C215.5 139.2 221.4 140 226.6 141.6C232 143.3 235.6 147.4 235.2 152.2C235.8 157.2 232 161.6 226.8 163C221.4 164.5 215.6 164.9 208 164.4Z"/>
+          <path fill="none" stroke="#77777f" strokeWidth="1" d="M214 139.5C218 139.4 222.6 140.4 226.6 141.6C232 143.3 235.6 147.4 235.2 152.2C235.8 157.2 232 161.6 226.8 163C222.6 164.2 218 164.9 214 164.7"/>
+          <path fill="none" stroke="#7d7d86" strokeWidth="0.5" d="M222.4 144C223.6 146.6 222.4 149 223.4 151.6C224.2 153.8 223 156 223.8 158.6M228.6 146.4C229.6 148.6 228.8 151 229.6 153.4C230 155 229.4 156.6 229.8 158.4"/>
+        </g>
+        {/* the burn line: a thin, ragged charred edge on the paper */}
+        <path fill="none" stroke="#1d0d08" strokeWidth="1.7" d="M202.4 139.4C204.6 143 200.8 147 203.2 151C205.4 155 201.2 159 203 164.6"/>
+      </g>
     </g>
   </Scene>
 )
@@ -261,13 +330,11 @@ export const IllusBloodTest = ({ className }: Props) => (
 )
 
 // ---------------------------------------------------------------------------------------------------------------
-// Ejection fraction, drawn as a figure: a section through the left side of the heart beating through one cardiac
-// cycle, and beside it the volume of blood in the left ventricle over time. Everything is computed from one small
-// table of the ventricle's volume, so the chamber, the valves, the arrows and the trace always agree. It follows
-// the percentage being entered: a weaker heart squeezes less, leaves more blood behind, and the sum changes.
+// Ejection fraction: a section through the left side of the heart beating through one cardiac cycle, with the
+// share of blood it pushes out stated in plain words beside it. The chamber is driven from one small table of
+// the ventricle's volume, and it follows the percentage being entered: a weaker heart visibly squeezes less.
 // (It is animated with SVG's own <animate>, which can change a path's shape in every browser; CSS cannot yet.)
 const BEAT = 2.6                    // seconds per heartbeat in the drawing
-const FULL = 120                    // mL in a typical adult left ventricle when full
 const DRAWN_AT = 58                 // the ejection fraction the squeezed outline below was drawn for
 // volume over one beat (1 = full, 0 = fully squeezed), after the Wiggers diagram
 const KNOTS = [[0, 1], [0.05, 1],   // both valves shut, pressure building
@@ -300,8 +367,6 @@ const chamber = (v: number, close: boolean, depth = 1) => {
   const c = CHAMBER_FULL.map((full, i) => num(full + (CHAMBER_SQUEEZED[i] - full) * depth * (1 - v)))
   return `M${c[0]} ${c[1]}C${c.slice(2, 8).join(" ")}C${c.slice(8).join(" ")}${close ? "Z" : ""}`
 }
-const GRAPH = 180, PEN = 250, BEAT_WIDTH = 70          // left edge of the graph, where the pen writes, one beat's width
-const mlY = (ml: number) => 72 + (FULL - ml) * (78 / 70)         // the graph's scale: the same height per mL for every patient
 
 const loop = { dur: `${BEAT}s`, repeatCount: "indefinite" } as const
 const sampled = { ...loop, calcMode: "linear", keyTimes: PHASES.map(num).join(";") } as const
@@ -327,22 +392,16 @@ const Arrow = ({ d, show }: { d: string; show: Moments }) => (
 
 export const IllusPump = ({ value, ...p }: Props) => {
   const ef = Math.min(80, Math.max(10, typeof value === "number" ? value : 55))
-  const left = Math.round(FULL * (1 - ef / 100)), out = FULL - left
   const f = useMemo(() => {
     const depth = ef / DRAWN_AT
-    const y = (phase: number) => num(mlY(left + out * volumeAt(phase)))
     return {
       blood: PHASES.map((ph) => chamber(volumeAt(ph), true, depth)).join(";"),
       edge: PHASES.map((ph) => chamber(volumeAt(ph), false, depth)).join(";"),
-      pen: PHASES.map(y).join(";"),
-      trace: "M" + Array.from({ length: 2 * STEPS + 1 }, (_, k) => k - STEPS).map((k) => `${num(PEN + (BEAT_WIDTH * k) / STEPS)} ${y(k / STEPS)}`).join("L"),
     }
-  }, [ef, left, out])
-  const top = mlY(FULL), bottom = mlY(left)
+  }, [ef])
   return (
     // keyed by the value: a new number restarts every moving part together, so they can never fall out of step
-    <Scene key={ef} className={p.className} label={`A section through the left side of the heart. The left ventricle fills to ${FULL} millilitres, squeezes, and is left with ${left}. The ${out} it pushed out is ${ef} percent of what it held: the ejection fraction.`}>
-      <clipPath id="il-pump-win"><rect x={GRAPH} y="58" width={PEN - GRAPH} height="150" /></clipPath>
+    <Scene key={ef} className={p.className} label={`A section through the left side of the heart, beating. With each beat the left ventricle pushes out ${ef} percent of the blood it holds.`}>
       {/* muscle, then the blood in the aorta, the atrium and the ventricle */}
       <path className="f-rose-2" d={`${WALL}Z`} />
       <path className="f-blood" d={`${AORTA}Z`} /><path className="f-blood" d={`${ATRIUM}Z`} />
@@ -359,22 +418,10 @@ export const IllusPump = ({ value, ...p }: Props) => {
       <text x="50" y="44" textAnchor="end">aorta</text><text x="131" y="42" textAnchor="middle">left atrium</text>
       <text x="2" y="176" textAnchor="start">left</text><text x="2" y="189" textAnchor="start">ventricle</text>
       <path className="s-hair s-mute" d="M30 172L90 146" /><circle className="f-mute" cx="90" cy="146" r="2" />
-      {/* the sum, and the volume trace it comes from */}
-      <text x={GRAPH} y="20" textAnchor="start" className="t-strong">ejection fraction</text>
-      <text x={GRAPH} y="36" textAnchor="start" className="t-rose">{`${out} ÷ ${FULL} mL = ${ef}%`}</text>
-      <path className="s-hair s-mute" strokeDasharray="2.5 3.5" d={`M${GRAPH} ${top}H270M${GRAPH} ${num(bottom)}H270`} />
-      <path className="s-hair s-mute" d={`M${GRAPH} ${top}V${num(bottom)}`} />
-      <text x={GRAPH} y={top - 7} textAnchor="start">{`${FULL} mL when full`}</text>
-      <text x={GRAPH} y={bottom + 17} textAnchor="start">{`${left} mL left`}</text>
-      <g clipPath="url(#il-pump-win)">
-        <path className="s-line" strokeWidth="2.25" d={f.trace}>
-          {motion && <animateTransform attributeName="transform" type="translate" {...loop} from="0 0" to={`-${BEAT_WIDTH} 0`} />}
-        </path>
-      </g>
-      <circle className="f-rose s-bg" strokeWidth="2" cx={PEN} cy={top} r="5.5">{motion && <animate attributeName="cy" {...sampled} values={f.pen} />}</circle>
-      <path className="s-rose" strokeWidth="2" d={`M266 ${top + 3}V${num(bottom - 3)}M262 ${top + 8}L266 ${top + 3}L270 ${top + 8}M262 ${num(bottom - 8)}L266 ${num(bottom - 3)}L270 ${num(bottom - 8)}`} />
-      <text x="275" y={(top + bottom) / 2 - 2} textAnchor="start" className="t-rose">{`${out} mL`}</text>
-      <text x="275" y={(top + bottom) / 2 + 12} textAnchor="start" className="t-rose">out</text>
+      {/* what the number means, in plain words */}
+      <text x="186" y="112" textAnchor="start" className="t-num" style={{ fontSize: 38 }}>{`${ef}%`}</text>
+      <text x="187" y="134" textAnchor="start">of the blood leaves</text>
+      <text x="187" y="149" textAnchor="start">with each beat</text>
     </Scene>
   )
 }
