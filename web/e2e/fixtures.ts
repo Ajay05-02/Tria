@@ -4,9 +4,10 @@ import { test as base, expect } from "@playwright/test"
 // shows its pages without it): they test the questions, the validation, the messages and the animations, and need no
 // 3D picture, which on a machine with no graphics card is what makes everything slow.
 export const test = base.extend({
-  page: async ({ page }, use, testInfo) => {
+  // `provide` is Playwright's "use": it is not named `use` here only because the linter takes that for a React hook
+  page: async ({ page }, provide, testInfo) => {
     if (!testInfo.titlePath.some((t) => t.includes("@heart"))) await page.route(/\/assets\/heart-[^/]+\.js/, (route) => route.abort())
-    await use(page)
+    await provide(page)
   },
 })
 export { expect }

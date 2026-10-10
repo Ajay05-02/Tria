@@ -721,7 +721,6 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
   }
 
   // ---------------------------------------------------------------- interaction
-  const pointer = new THREE.Vector2();
   let downAt = null;
   // An artery is a few pixels wide, so a click has to count when it lands near one, not only on it. (The fat
   // that lies beside the artery stands slightly proud of it, so a click on the artery's edge often hits fat first.)
