@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./fixtures"
 import { answerCurrent, NAME, startAssessment } from "./helpers"
 
 test.describe("the patient's name", () => {

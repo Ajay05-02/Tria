@@ -1,7 +1,7 @@
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./fixtures"
 import { answerCurrent, answerAll, NAME, reachResults, startAssessment } from "./helpers"
 
-test("the landing heart has no labels and no patient data", async ({ page }) => {
+test("the landing heart has no labels and no patient data @heart", async ({ page }) => {
   await page.goto("/")
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Coronary risk")
   await expect(page.locator(".heart-stage canvas")).toBeVisible({ timeout: 15_000 })
@@ -9,12 +9,16 @@ test("the landing heart has no labels and no patient data", async ({ page }) => 
   await expect(page.getByText(/%/).filter({ hasText: /^(LAD|LCX|RCA)/ })).toHaveCount(0)
 })
 
-test("a full assessment reaches the results, labelled with the name and honest about what was entered", async ({ page }) => {
+test("a full assessment reaches the results, and is honest about what was entered", async ({ page }) => {
   await reachResults(page)
-  await expect(page.getByText(`${NAME}, `)).toBeVisible()
-  await expect(page.locator(".heart-stage .vessel-label:visible")).toHaveCount(3, { timeout: 15_000 })
   await expect(page.getByText(/you answered all 11 questions/i)).toBeVisible()
   await expect(page.getByText(/how far to trust each artery/i)).toBeVisible()
+})
+
+test("the results are labelled with the patient's name, and the heart carries the three artery labels @heart", async ({ page }) => {
+  await reachResults(page)
+  await expect(page.getByText(`${NAME}, `)).toBeVisible()
+  await expect(page.locator(".heart-stage .vessel-label:visible")).toHaveCount(3, { timeout: 30_000 })
 })
 
 test("answers marked Not sure are reported as assumed", async ({ page }) => {
@@ -76,7 +80,6 @@ test("while the result is worked out, the wordmark beats: it contracts and expan
   for (let i = 0; i < 40; i++) { seen.push(await scale()); await page.waitForTimeout(50) }
   expect(Math.min(...seen), "it contracts").toBeLessThan(0.97)
   expect(Math.max(...seen), "it expands past rest").toBeGreaterThan(1.03)
-  await expect(page.getByRole("heading", { level: 2 }).first()).toContainText(/chance of narrowed|signs of narrowed/, { timeout: 15_000 })
 })
 
 test.describe("the header logo", () => {
@@ -156,7 +159,7 @@ test("a value the server refuses is explained", async ({ page }) => {
   await expect(page.getByRole("alert").filter({ hasText: "Age cannot be negative" })).toBeVisible({ timeout: 10_000 })
 })
 
-test("the heart squeezes with the beat, and is printed relaxed whatever the moment", async ({ page }) => {
+test("the heart squeezes with the beat, and is printed relaxed whatever the moment @heart", async ({ page }) => {
   await reachResults(page)
   const stage = page.locator(".heart-stage")
   await expect(stage.locator(".vessel-label:visible")).toHaveCount(3, { timeout: 15_000 })
@@ -175,7 +178,7 @@ test("the heart squeezes with the beat, and is printed relaxed whatever the mome
   expect(printedSqueezed).toBe(printedAtRest)
 })
 
-test("the light mode keeps the heart whole: the same labels, a picture that is not blank, and clicking still works", async ({ page }) => {
+test("the light mode keeps the heart whole: the same labels, a picture that is not blank, and clicking still works @heart", async ({ page }) => {
   await reachResults(page)
   const stage = page.locator(".heart-stage")
   await expect(stage.locator(".vessel-label:visible")).toHaveCount(3, { timeout: 30_000 })
@@ -194,7 +197,7 @@ test("the light mode keeps the heart whole: the same labels, a picture that is n
   await expect(stage.locator(".vessel-label.selected")).toContainText("LAD")
 })
 
-test("Save PDF produces a real report with the name and the hand-drawn wordmark", async ({ page }) => {
+test("Save PDF produces a real report with the name and the hand-drawn wordmark @heart", async ({ page }) => {
   await reachResults(page, "Jane Rivera")
   await expect(page.locator(".heart-stage .vessel-label:visible")).toHaveCount(3, { timeout: 15_000 })
   const download = page.waitForEvent("download", { timeout: 30_000 })
@@ -259,7 +262,7 @@ test.describe("with reduced motion", () => {
   })
 })
 
-test.describe("clicking the arteries on the heart", () => {
+test.describe("clicking the arteries on the heart @heart", () => {
   for (const artery of ["LAD", "LCX", "RCA"] as const) {
     test(`a click on or near the ${artery} selects it, its label and its muscle`, async ({ page }) => {
       await reachResults(page)

@@ -186,7 +186,7 @@ pip install -r requirements-dev.txt
 python -m pytest
 ```
 
-Browser tests drive the real app (the name and number checks, the full flow to the results, error messages, the PDF download, a phone-sized screen and reduced motion). They start their own server on port 7861 and use the Chrome that is installed; in CI they use Playwright's Chromium:
+Browser tests drive the real app (the name and number checks, the full flow to the results, error messages, a phone-sized screen and reduced motion, the logo and loader animations, and the 3D heart: clicking arteries, Risk map, the beat, the PDF). They start their own server on port 7861 and use the Chrome that is installed. The tests that need the 3D heart *drawn* are tagged `@heart` and need a machine with a graphics card; GitHub's runners have none, so CI runs everything else (`npm run test:e2e:ci`, with the 3D bundle blocked) and the `@heart` tests run on your machine with the rest:
 
 ```bash
 cd web

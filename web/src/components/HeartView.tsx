@@ -49,7 +49,7 @@ export function HeartView({ viewerRef, stageRef, risks, selected, plain, bpm, vi
       })
       viewerRef.current = viewer
       setReady(true)
-    })
+    }).catch((e) => console.warn("The 3D heart could not be loaded; the results are shown without it.", e))
     return () => {
       gone = true
       viewer?.dispose()

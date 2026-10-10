@@ -48,7 +48,7 @@ export function HeroScreen({ meta, onStart }: Props) {
         viewer!.tintArteries({ LAD: at(0), LCX: at(2.1), RCA: at(4.2) })
       }
       frame = requestAnimationFrame(sweep)
-    })
+    }).catch((e) => console.warn("The 3D heart could not be loaded; the landing page is shown without it.", e))
     return () => { gone = true; cancelAnimationFrame(frame); viewer?.dispose() }
   }, [])
 
