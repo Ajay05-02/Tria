@@ -74,6 +74,7 @@ float vnoise(vec3 x) {
              mix(mix(hash13(i + vec3(0,0,1)), hash13(i + vec3(1,0,1)), f.x), mix(hash13(i + vec3(0,1,1)), hash13(i + vec3(1,1,1)), f.x), f.y), f.z);
 }
 float fbm(vec3 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 3; i++) { s += a * vnoise(p); p *= 2.03; a *= 0.5; } return s * 1.14; }
+float fbm2(vec3 p) { return (0.5 * vnoise(p) + 0.25 * vnoise(p * 2.03)) * 1.33; }
 // bend the normal by the screen-space slope of a height field (the same method three uses for bump maps)
 vec3 bumpNormal(vec3 surfPos, vec3 surfNorm, vec2 dHdxy, float faceDirection) {
   vec3 sx = normalize(dFdx(surfPos)), sy = normalize(dFdy(surfPos));
@@ -109,37 +110,46 @@ ${shaded ? "vObjPos = position; vFat = aFat; vAO = aAO;" : ""}`);
 uniform float uBump; uniform float uMott; uniform float uGlow; uniform float uWet; uniform vec3 uFat;
 varying vec3 vObjPos; varying float vFat; varying float vAO;
 ${NOISE_GLSL}`)
-      // colour: slow mottling, then the fat (its edge broken up by noise, so it is lobular at any zoom), then the
-      // baked occlusion. `fatMask` stays in scope for the chunks below.
+      // Three noise fields are computed once per pixel and shared by everything below (the noise is the shader's main
+      // cost, and it is what the software renderers on machines with no graphics card spend their time on):
+      //   n1 broad mottling   n2 medium lobes (the fat's edge, wet and dry patches)   n3 fine pores
+      // colour: mottling, then the fat (its edge broken up by noise, so it is lobular at any zoom), then the baked
+      // occlusion. `fatMask` stays in scope for the chunks below.
       .replace("#include <color_fragment>", `#include <color_fragment>
-float fatMask = smoothstep(0.26, 0.62, vFat + (fbm(vObjPos * 11.0) - 0.5) * 0.34 + (fbm(vObjPos * 5.0) - 0.5) * 0.22);
+float n1 = 0.5, n2 = 0.5, n3 = 0.5;
+#ifndef LITE
+n1 = fbm(vObjPos * 2.6); n2 = fbm(vObjPos * 9.0); n3 = fbm2(vObjPos * 31.0);
+#endif
+float fatMask = smoothstep(0.26, 0.62, vFat + (n2 - 0.5) * 0.4 + (n1 - 0.5) * 0.22);
 {
-  float m = fbm(vObjPos * 2.6) - 0.5;
-  float fine = fbm(vObjPos * 17.0) - 0.5;
-  diffuseColor.rgb *= 1.0 + uMott * m * 2.0 + 0.05 * fine;
-  vec3 fatColour = uFat * (0.9 + 0.2 * fbm(vObjPos * 30.0));
+  diffuseColor.rgb *= 1.0 + uMott * (n1 - 0.5) * 2.0 + 0.05 * (n3 - 0.5);
+  vec3 fatColour = uFat * (0.9 + 0.2 * n3);
   diffuseColor.rgb = mix(diffuseColor.rgb, fatColour, fatMask);
   diffuseColor.rgb *= mix(1.0, vAO, 0.9);
 }`)
       // shine: patchy wet and dry, and fat is matt
       .replace("#include <roughnessmap_fragment>", `#include <roughnessmap_fragment>
-roughnessFactor = clamp(roughnessFactor + (fbm(vObjPos * 6.5) - 0.5) * uWet * 2.0 + fatMask * 0.34, 0.2, 1.0);`)
+roughnessFactor = clamp(roughnessFactor + (n2 - 0.5) * uWet * 2.0 + fatMask * 0.34, 0.2, 1.0);`)
       // surface: fine pores everywhere, and larger lumps in the fat
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+#ifndef LITE
 {
-  float hgt = fbm(vObjPos * 34.0) * 0.55 + fbm(vObjPos * 9.0) * (0.35 + fatMask * 1.1);
+  float hgt = n3 * 0.55 + n2 * (0.35 + fatMask * 1.1);
   normal = bumpNormal(-vViewPosition, normal, vec2(dFdx(hgt), dFdy(hgt)) * (0.16 * uBump), faceDirection);
-}`)
+}
+#endif`)
       .replace("#include <lights_physical_fragment>", `#include <lights_physical_fragment>
 #ifdef USE_CLEARCOAT
   material.clearcoat *= 1.0 - 0.75 * fatMask;
 #endif`)
       // light that glows through thin flesh at the edges, warm and deep red, never on fat
       .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+#ifndef LITE
 {
   float facing = clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
   totalEmissiveRadiance += uGlow * vec3(0.30, 0.035, 0.025) * pow(1.0 - facing, 2.2) * (1.0 - fatMask) * vAO;
-}`);
+}
+#endif`);
   };
   material.customProgramCacheKey = () => `tria-heart-${shade}`;
 }
@@ -448,3 +458,20 @@ export function colourCaps(caps, parts) {
   caps.setAttribute("color", new THREE.BufferAttribute(colours, 3));
 }
 const tmp3 = new THREE.Vector3();
+
+// ---------------------------------------------------------------- a lighter mode for machines that cannot keep up
+// Without a graphics card (or on an old phone) the tissue shading is more than the machine can draw smoothly. The
+// light mode drops the per-pixel texture, bumps and glow, and the clear coat and sheen layers, which leaves the
+// colours, the shading, the fat, the soft shadows and the beat as they were.
+export function setLite(materials, on) {
+  for (const m of materials) {
+    m.defines = { ...(m.defines || {}) };
+    if (on) m.defines.LITE = ""; else delete m.defines.LITE;
+    if (m.isMeshPhysicalMaterial) {
+      m.userData.full ??= { clearcoat: m.clearcoat, sheen: m.sheen };
+      m.clearcoat = on ? 0 : m.userData.full.clearcoat;
+      m.sheen = on ? 0 : m.userData.full.sheen;
+    }
+    m.needsUpdate = true;
+  }
+}

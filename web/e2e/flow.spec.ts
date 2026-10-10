@@ -80,6 +80,13 @@ test("while the result is worked out, the wordmark beats: it contracts and expan
 })
 
 test.describe("the header logo", () => {
+  // The About page has the same header and no 3D heart, so nothing else is competing for the processor while the
+  // logo's animation is timed (on the landing page the heart does, and on a slow machine that slows everything).
+  const openAbout = async (page: import("@playwright/test").Page) => {
+    await page.goto("/")
+    await page.getByRole("button", { name: "about" }).click()
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("About Tria")
+  }
   const scaleOf = (page: import("@playwright/test").Page) => page.locator("#logo-btn svg").evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a)
   const sample = async (page: import("@playwright/test").Page, ms = 1600) => {
     const seen: number[] = []
@@ -89,7 +96,7 @@ test.describe("the header logo", () => {
 
   test("is still until the pointer is on it, beats while it is, and finishes its beat on leaving", async ({ page, isMobile }) => {
     test.skip(isMobile, "hover is a pointer thing")
-    await page.goto("/")
+    await openAbout(page)
     expect(new Set(await sample(page, 300)).size, "still at first").toBe(1)
     await page.locator("#logo-btn").hover()
     const hovered = await sample(page)
@@ -103,7 +110,7 @@ test.describe("the header logo", () => {
 
   test("leaving in the middle of a contraction does not snap back", async ({ page, isMobile }) => {
     test.skip(isMobile, "hover is a pointer thing")
-    await page.goto("/")
+    await openAbout(page)
     const logo = page.locator("#logo-btn svg")
     const clock = () => logo.evaluate((el) => { const a = el.getAnimations()[0]; return a ? { t: Number(a.currentTime), state: a.playState } : null })
     await page.locator("#logo-btn").hover()
@@ -122,7 +129,7 @@ test.describe("the header logo", () => {
 
   test("beats when it has keyboard focus", async ({ page, isMobile }) => {
     test.skip(isMobile, "no keyboard")
-    await page.goto("/")
+    await page.goto("/")                                                        // tabbing starts from the top of the page, so not the About page
     await page.keyboard.press("Tab")                                            // the skip link
     await page.keyboard.press("Tab")                                            // the logo
     await expect(page.locator("#logo-btn")).toBeFocused()
@@ -134,7 +141,7 @@ test.describe("the header logo", () => {
     test.use({ reducedMotion: "reduce" })
     test("does not move", async ({ page, isMobile }) => {
       test.skip(isMobile, "hover is a pointer thing")
-      await page.goto("/")
+      await openAbout(page)
       await page.locator("#logo-btn").hover()
       expect(new Set(await sample(page, 800)).size).toBe(1)
     })
@@ -166,6 +173,25 @@ test("the heart squeezes with the beat, and is printed relaxed whatever the mome
   await hold(1)
   const printedSqueezed = await stage.evaluate((el: any) => el.__viewer.snapshot())
   expect(printedSqueezed).toBe(printedAtRest)
+})
+
+test("the light mode keeps the heart whole: the same labels, a picture that is not blank, and clicking still works", async ({ page }) => {
+  await reachResults(page)
+  const stage = page.locator(".heart-stage")
+  await expect(stage.locator(".vessel-label:visible")).toHaveCount(3, { timeout: 30_000 })
+  await page.getByRole("button", { name: /heartbeat/i }).click()
+  await stage.evaluate((el: any) => el.__viewer.setQuality("full"))
+  await page.waitForTimeout(800)
+  const full = await stage.screenshot()
+  await stage.evaluate((el: any) => el.__viewer.setQuality("lite"))
+  await page.waitForTimeout(800)
+  expect(await stage.evaluate((el: any) => el.__viewer.quality())).toBe("lite")
+  const lite = await stage.screenshot()
+  expect(Buffer.compare(full, lite), "the light mode changes the finish").not.toBe(0)
+  expect(lite.length, "and is a real picture, not a blank frame").toBeGreaterThan(20_000)
+  await expect(stage.locator(".vessel-label:visible")).toHaveCount(3)
+  await stage.locator(".vessel-label", { hasText: "LAD" }).click()
+  await expect(stage.locator(".vessel-label.selected")).toContainText("LAD")
 })
 
 test("Save PDF produces a real report with the name and the hand-drawn wordmark", async ({ page }) => {

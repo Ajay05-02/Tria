@@ -35,17 +35,19 @@ export function HeroScreen({ meta, onStart }: Props) {
       viewer.setBeating(!reduceMotion)
       viewer.setTerritories(false)
       if (reduceMotion) return
+      // The colours change slowly (a full sweep takes 17 s), so about 20 updates a second looks the same as 60
+      // and costs a third as much.
       const start = performance.now()
-      const sweep = () => {
-        const t = (performance.now() - start) / 1000
-        const at = (phase: number) => 0.5 + 0.44 * Math.sin((t / 17) * 2 * Math.PI + phase)
-        viewer!.setRisks(Object.fromEntries(["LAD", "LCX", "RCA"].map((v, i) => {
-          const score = at(i * 2.1)
-          return [v, { probability: score, score, high: score > 0.5 }]
-        })) as Parameters<HeartViewer["setRisks"]>[0])
+      let last = 0
+      const sweep = (now: number) => {
         frame = requestAnimationFrame(sweep)
+        if (now - last < 50) return
+        last = now
+        const t = (now - start) / 1000
+        const at = (phase: number) => 0.5 + 0.44 * Math.sin((t / 17) * 2 * Math.PI + phase)
+        viewer!.tintArteries({ LAD: at(0), LCX: at(2.1), RCA: at(4.2) })
       }
-      sweep()
+      frame = requestAnimationFrame(sweep)
     })
     return () => { gone = true; cancelAnimationFrame(frame); viewer?.dispose() }
   }, [])

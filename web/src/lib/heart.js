@@ -9,7 +9,7 @@
 // ±180° = posterior, -90° = patient's right (-x). h runs from -1 (apex) to +1 (top of the atria).
 import * as THREE from "three";
 import { riskHexFromScore } from "./riskramp";
-import { bakeTissue, beatUniforms, colourCaps, computeTerritories, deformPoint, patchMaterial, studioScene, systole } from "./heartshading";
+import { bakeTissue, beatUniforms, colourCaps, computeTerritories, deformPoint, patchMaterial, setLite, studioScene, systole } from "./heartshading";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
@@ -179,9 +179,15 @@ function territoryWeights(h, th) {
 export const riskColor = (score) => new THREE.Color(riskHexFromScore(score));
 
 // ---------------------------------------------------------------- viewer
+// Set once any heart has found the machine too slow, so the next one (the results page after the landing page)
+// starts in the light mode without having to find out again
+let machineIsSlow = false;
+const SLOW_MS = 48;                  // a frame slower than this on average (under about 21 per second) is too slow
+
 export function createHeartViewer(container, { onSelect, reduceMotion = false, zoom = true, labels: showLabels = true } = {}) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const sharp = Math.min(window.devicePixelRatio, 2);
+  renderer.setPixelRatio(machineIsSlow ? 1 : sharp);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.14;
   container.appendChild(renderer.domElement);
@@ -501,6 +507,8 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
     };
     const muscle = new THREE.MeshPhysicalMaterial({ vertexColors: true, ...gloss });
     patchMaterial(muscle, { shade: "tissue" });
+    shaded.length = 0;
+    shaded.push(muscle);
     myocardium = new THREE.Mesh(geo, muscle);
     anat.add(myocardium);
 
@@ -509,6 +517,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
       const mat = arteryMaterial();
       mat.side = THREE.DoubleSide;           // the capped vessel ends are fans of either winding
       patchMaterial(mat, { shade: "none" }); // the beat only: an artery's colour is its risk, so nothing may change it
+      shaded.push(mat);
       vesselMaterials[name] = mat;
       const src = part(name);
       const mesh = new THREE.Mesh(src.geometry, mat);
@@ -521,10 +530,11 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
     const glossy = (color) => new THREE.MeshPhysicalMaterial({ color, ...gloss, sheen: 0 });
     const RED_VESSEL = glossy(0x9e2626), BLUE_VESSEL = glossy(0x35579f), BLUE_VEIN = glossy(0x2a4689);
     BLUE_VEIN.side = THREE.DoubleSide;
-    for (const m of [RED_VESSEL, BLUE_VESSEL, BLUE_VEIN]) patchMaterial(m, { shade: "vessel" });
+    for (const m of [RED_VESSEL, BLUE_VESSEL, BLUE_VEIN]) { patchMaterial(m, { shade: "vessel" }); shaded.push(m); }
     // cut vessel ends, drawn as a dark lumen like a textbook specimen
     const LUMEN = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, side: THREE.DoubleSide });
     patchMaterial(LUMEN, { shade: "none" });
+    shaded.push(LUMEN);
     if (part("caps")) colourCaps(part("caps").geometry, Object.fromEntries(["aorta", "pulmonary", "pulmonary_veins", "SVC", "IVC"].map((n) => [n, part(n)?.geometry])));
     for (const [name, mat] of [["aorta", RED_VESSEL], ["pulmonary", BLUE_VESSEL], ["pulmonary_veins", RED_VESSEL],
       ["SVC", BLUE_VESSEL], ["IVC", BLUE_VESSEL], ["veins", BLUE_VEIN], ["caps", LUMEN]]) {
@@ -599,6 +609,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
     camera.position.copy(HOME.pos);
     labelRenderer.domElement.style.visibility = "";
 
+    if (lite) setLite(shaded, true);
     // re-apply the current state to the new meshes
     if (risks) setRisks(risks);
     select(selected);
@@ -629,11 +640,15 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
   //   Risk map: every territory is painted
   //   both:     the selected one strongly, the others faintly
   // Fat is never painted.
+  let wasPainting = false;
+  const shaded = [];                          // every material the tissue shading touches, to switch to the light mode
   function recolorMyocardium() {
     const colors = g.attributes.color;
     const names = ["LAD", "LCX", "RCA"];
     const strength = names.map((n) => (selected === n ? 0.8 : showTerritories ? (selected ? 0.3 : 0.58) : 0));
     const painting = risks && strength.some((s) => s > 0);
+    if (!painting && !wasPainting) return;                 // nothing was painted and nothing is: the colours are already right
+    wasPainting = !!painting;
     const edge = (x) => { const t = Math.min(1, Math.max(0, (x - 0.38) / 0.24)); return t * t * (3 - 2 * t); };
     for (let i = 0; i < nv; i++) {
       let r = baseColors[i * 3], gg = baseColors[i * 3 + 1], b = baseColors[i * 3 + 2];
@@ -679,6 +694,13 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
     }
     refreshVessels();
     recolorMyocardium();
+  }
+
+  // Only the arteries' own colours, from a score 0..1 each (the ramp's own scale): no muscle, no labels. For the
+  // landing heart's demonstration, which changes them every frame and has neither to update.
+  function tintArteries(scores) {
+    for (const name of ["LAD", "LCX", "RCA"]) vesselColor[name] = riskColor(scores[name]);
+    refreshVessels();
   }
 
   function select(name) {
@@ -765,6 +787,15 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
 
   const clock = new THREE.Clock();
   let phase = 0;
+  // Frame time is watched for a couple of seconds once the heart is on screen. If the machine is too slow it
+  // switches to the light mode and a lower resolution, once, and stays there.
+  let watched = 0, watchedMs = 0, lite = machineIsSlow;
+  const slowDown = () => {
+    lite = machineIsSlow = true;
+    renderer.setPixelRatio(1);
+    resize();
+    setLite(shaded, true);
+  };
   // Squeeze the heart to `s` (0..1): the shaders read the uniform, and each label's leader line is moved to
   // where its artery now is, with the same maths, so it stays on the surface
   let lastS = -1, frozen = null, framed = false;        // `framed`: the anatomical model is loaded, so the beat can deform it
@@ -784,6 +815,11 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
   const camDir = new THREE.Vector3(), wp = new THREE.Vector3(), wn = new THREE.Vector3();
   renderer.setAnimationLoop((time) => {
     const dt = clock.getDelta();
+    if (!lite && framed && !document.hidden && dt < 0.5) {
+      watched++;
+      if (watched > 30) watchedMs += dt * 1000;              // the first frames compile the shaders and say nothing
+      if (watched === 90) { if (watchedMs / 60 > SLOW_MS) slowDown(); else watched = -1e9; }
+    }
     if (beating) phase = (phase + dt * bpm / 60) % 1;
     if (framed) {
       pose(frozen ?? (beating ? systole(phase) : 0));
@@ -832,6 +868,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
 
   const api = {
     setRisks,
+    tintArteries,
     select,
     // Display names for the artery labels (plain-words mode)
     setLabelNames: (names) => {
@@ -882,6 +919,9 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
       camera.position.copy(controls.target).addScaledVector(new THREE.Vector3(x, y, z).normalize(), dist);
       camTween = null;
     },
+    // "full" or "lite": for the tests (it is chosen by itself from the frame rate)
+    setQuality: (q) => { if (q === "lite") slowDown(); else { lite = machineIsSlow = false; renderer.setPixelRatio(sharp); resize(); setLite(shaded, false); } },
+    quality: () => (lite ? "lite" : "full"),
     setBeating: (on) => { beating = on; frozen = null; },
     // Hold the heart at one moment of the squeeze (0 relaxed .. 1 fully squeezed); used by the tests and for stills
     freezeAt: (s) => { frozen = s; },

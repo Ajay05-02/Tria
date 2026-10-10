@@ -22,7 +22,7 @@ export async function answerCurrent(page: Page) {
   } else {
     await page.getByRole("button", { name: /^(next|finish)/i }).click()
   }
-  await expect(heading).not.toHaveText(before ?? "", { timeout: 8_000 })
+  await expect(heading).not.toHaveText(before ?? "")
 }
 
 // Answers all 11 questions, leaving the page on the optional-results screen

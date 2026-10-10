@@ -6,20 +6,23 @@ import { defineConfig, devices } from "@playwright/test"
 // Locally they use the Chrome that is already installed; in CI, Playwright's own Chromium.
 const channel = process.env.CI ? undefined : "chrome"
 
+// CI has no graphics card, so the 3D heart is drawn in software, which is many times slower. Set E2E_SOFTWARE_GL=1 to
+// run that way on your own machine.
+const software = !!process.env.CI || !!process.env.E2E_SOFTWARE_GL
+
 export default defineConfig({
   testDir: "./e2e",
   // generous: a few pages drawing the 3D heart at once on one machine slow every test down
   timeout: 120_000,
-  workers: process.env.CI ? 2 : 4,
-  expect: { timeout: 8_000 },
+  expect: { timeout: software ? 30_000 : 8_000 },
   fullyParallel: true,
+  workers: software ? 2 : 4,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
-  // in CI there is no graphics card, so the 3D heart is drawn in software
   use: {
     baseURL: "http://127.0.0.1:7861",
     trace: "retain-on-failure",
-    launchOptions: { args: process.env.CI ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] },
+    launchOptions: { args: software ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] : [] },
   },
   webServer: {
     command: `${process.env.PYTHON ?? path.resolve(process.cwd(), "../.venv/bin/python")} -m uvicorn app.main:app --host 127.0.0.1 --port 7861`,

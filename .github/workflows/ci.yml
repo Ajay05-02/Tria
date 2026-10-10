@@ -55,6 +55,8 @@ jobs:
   browser:
     name: Browser tests
     runs-on: ubuntu-latest
+    # the runner has no graphics card, so the 3D heart is drawn in software and the suite is slow (about 8 minutes on a fast laptop)
+    timeout-minutes: 60
     needs: [python]
     env:
       PYTHON: python
