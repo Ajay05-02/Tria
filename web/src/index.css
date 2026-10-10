@@ -160,6 +160,8 @@
 .vessel-label .pct { color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
 .vessel-label.selected { border-color: var(--foreground); box-shadow: 0 0 0 3px color-mix(in oklch, var(--foreground) 12%, transparent); }
 .vessel-label.behind { opacity: 0.55; border-style: dashed; }
+.vessel-label.dim { opacity: 0.5; }
+.vessel-label.selected { opacity: 1; }
 
 /* same eased ramp as riskColor() in heart.js: green below the cut-off, red quickly above it */
 .risk-ramp { background: linear-gradient(90deg, #2f9a68 0%, #4c9b65 12.5%, #7e9c5c 25%, #b09f49 37.5%, #e0a21a 50%, #d78621 62.5%, #d27025 75%, #cd5728 87.5%, #c8352b 100%); }
@@ -177,12 +179,22 @@
   color: var(--primary-foreground); font-size: 0.875rem; font-weight: 600; border-radius: 0.5rem; }
 .skip-link:focus { left: 1rem; }
 
-/* ---------- the "working out the result" screen: the wordmark writes itself, then a hairline keeps time */
+/* ---------- the "working out the result" screen: the wordmark writes itself, then beats */
+.loader-mark { transform-box: fill-box; transform-origin: center; animation: loader-beat 1.15s 0.75s ease-in-out infinite both; }
 .loader-mark path { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; animation: loader-write 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
-.loader-line span { display: block; height: 100%; width: 38%; border-radius: inherit; background: var(--foreground); animation: loader-slide 0.9s ease-in-out infinite alternate; }
 @keyframes loader-write { 0% { stroke-dashoffset: 1; opacity: 0; } 1% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
-@keyframes loader-slide { from { transform: translateX(-8%); } to { transform: translateX(171%); } }
-@media (prefers-reduced-motion: reduce) { .loader-mark path { animation: none; stroke-dashoffset: 0; opacity: 1; } .loader-line span { animation: none; width: 100%; } }
+/* contraction (quick, in), expansion (slower, a little past rest), a small second pulse, then a rest. It starts and ends at rest, so the loop has no seam. */
+@keyframes loader-beat {
+  0%, 100% { transform: scale(1); }
+  11% { transform: scale(0.9); animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1); }
+  27% { transform: scale(1.07); animation-timing-function: ease-in-out; }
+  39% { transform: scale(0.97); }
+  52% { transform: scale(1.025); }
+  68% { transform: scale(1); }
+}
+/* the same beat on the header logo while it is hovered or focused (Layout.tsx finishes the current beat on leaving) */
+.logo-beat { transform-box: fill-box; transform-origin: center; animation: loader-beat 1.15s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .loader-mark, .loader-mark path, .logo-beat { animation: none; } .loader-mark path { stroke-dashoffset: 0; opacity: 1; } }
 
 /* ---------- question illustrations (components/flow/Illustrations.tsx) */
 .illus { fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -216,8 +228,6 @@
 .illus text.t-small { font-size: 9px; }
 .illus .il-bp-needle { transform-origin: 228px 84px; animation: il-bp-needle 1.1s ease-in-out infinite alternate; }
 @keyframes il-bp-needle { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
-.illus .il-ch-cell { offset-rotate: auto; animation: il-ch-cell 10s linear infinite; }
-@keyframes il-ch-cell { from { offset-distance: 0%; } to { offset-distance: 100%; } }
 .illus .il-smoke-a { transform-origin: 210px 128px; animation: il-sway 4.6s ease-in-out infinite alternate; }
 .illus .il-smoke-b { transform-origin: 215px 127px; animation: il-sway 6.2s ease-in-out infinite alternate-reverse; }
 /* written out in full: the build's minifier turns a shorthand with no animation name into `animation: none` */

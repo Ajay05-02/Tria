@@ -1,11 +1,11 @@
 // Results: the risk and its reasons beside the 3D heart (layout after Kard, github.com/7-Bala/Kard, MIT)
 import type { RefObject } from "react"
 import { motion } from "framer-motion"
-import { AlertTriangle, FileDown, PencilLine, RotateCcw, TrendingDown, TrendingUp } from "lucide-react"
+import { AlertTriangle, FileDown, Info, PencilLine, RotateCcw, TrendingDown, TrendingUp } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { RiskRingSVG } from "@/components/kard/Svgs"
+import { RiskRing } from "@/components/flow/RiskRing"
 import { HeartView, type ViewOption } from "@/components/HeartView"
 import { cn } from "@/lib/utils"
 import { describeLabels, pctRisk, signed, VESSELS } from "@/lib/format"
@@ -24,6 +24,7 @@ interface Props {
   view: ViewOption[]
   bpm: number
   caption: string
+  answers: { given: number; of: number; optional: number } | null    // null for a study patient: every value is real
   busy: boolean
   viewerRef: RefObject<HeartViewer | null>
   stageRef: RefObject<HTMLDivElement | null>
@@ -59,7 +60,7 @@ export function ResultsScreen(p: Props) {
 
         <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center">
           <div className="relative size-36 shrink-0" role="img" aria-label={`${word}: ${pctRisk(cad.probability)} chance of coronary artery disease`}>
-            <RiskRingSVG value={Math.round(cad.probability * 100)} color={color} />
+            <RiskRing value={Math.round(cad.probability * 100)} color={color} />
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-3xl font-semibold tracking-tight tabular-nums" style={{ color }}>{pctRisk(cad.probability)}</span>
             </div>
@@ -78,6 +79,17 @@ export function ResultsScreen(p: Props) {
             </p>
           </div>
         </div>
+
+        {p.answers && (
+          <p className="flex gap-2.5 text-sm leading-relaxed text-muted-foreground">
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <span>
+              {p.answers.given === p.answers.of
+                ? <>You answered all {p.answers.of} questions{p.answers.optional ? ` and ${p.answers.optional} optional ${p.answers.optional === 1 ? "result" : "results"}` : ""}. Anything else is set to a typical value from the study.</>
+                : <>You answered <span className="font-medium text-foreground">{p.answers.given} of {p.answers.of}</span> questions. The {p.answers.of - p.answers.given} you skipped or marked "Not sure" are set to a typical value, which makes this result less reliable.</>}
+            </span>
+          </p>
+        )}
 
         {p.prediction.warnings.length > 0 && (
           <div role="alert" className="flex gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -157,6 +169,15 @@ export function ResultsScreen(p: Props) {
             ? "If CAD is present: which artery is likely narrowed, compared with the average patient with CAD. Telling the arteries apart is the model's weakest part."
             : "Chance that each artery is at least half blocked, coloured against each model's cut-off. Click an artery's label to turn the heart to it."}
         </p>
+        {p.meta.evaluation && (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">How far to trust each artery: </span>
+            {VESSELS.map((v, i) => (
+              <span key={v}>{i ? ", " : ""}{v} {p.meta.evaluation!["v2_two_step_vessels (deployed)"][v].auc >= 0.85 ? "fairly reliable" : "less reliable"}</span>
+            ))}
+            . The model is better at spotting that some artery is narrowed than at saying which one.
+          </p>
+        )}
       </section>
     </motion.div>
   )

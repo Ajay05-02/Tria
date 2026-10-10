@@ -93,17 +93,16 @@ export function DetailsScreen({ meta, inputs, touched, fromBlank, focus, onChang
   )
 }
 
-// While the answers are scored: the wordmark writes itself once, then a hairline keeps time until the result
-// arrives. The wait is short, so there is nothing here to read except what is happening.
+// While the answers are scored: the wordmark writes itself once, then beats like a heart (a quick contraction, a
+// slower expansion with a small rebound) until the result arrives. The wait is short, so there is nothing here to read.
 export function AnalyzingScreen() {
   return (
     <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
       className="flex flex-1 flex-col items-center justify-center gap-7 px-6" role="status" aria-live="polite" aria-label="Working out the result">
-      <svg viewBox={`0 0 ${WORDMARK.width} ${WORDMARK.height}`} className="loader-mark h-16 w-auto text-foreground" fill="none" stroke="currentColor"
+      <svg viewBox={`0 0 ${WORDMARK.width} ${WORDMARK.height}`} className="loader-mark h-20 w-auto text-foreground" fill="none" stroke="currentColor"
         strokeWidth={WORDMARK.stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {WORDMARK.paths.map((d, i) => <path key={d} d={d} pathLength={1} style={{ animationDelay: `${i * 0.11}s` }} />)}
       </svg>
-      <div className="loader-line h-0.5 w-44 overflow-hidden rounded-full bg-border" aria-hidden="true"><span /></div>
       <p className="text-sm text-muted-foreground">Working out the result</p>
     </motion.div>
   )

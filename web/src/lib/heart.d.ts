@@ -10,12 +10,15 @@ export interface HeartViewer {
   snapshot(scale?: number): string
   setHeartRate(bpm: number): void
   setBeating(on: boolean): void
+  freezeAt(squeeze: number): void
+  lookFrom(x: number, y: number, z: number): void
+  distanceToArteries(x: number, y: number): number
+  screenPointOf(name: string): { x: number; y: number } | null
   setTerritories(on: boolean): void
   resetView(): void
   dispose(): void
 }
 
-export function riskScore(p: number, threshold: number): number
 export function riskColor(score: number): Color
 export function createHeartViewer(
   container: HTMLElement,

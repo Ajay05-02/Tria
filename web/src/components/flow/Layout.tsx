@@ -48,8 +48,19 @@ function ProgressDots({ total, current, answered, onScrub, onJump }: {
     onScrub(null)
   }
 
+  // keyboard: arrows step one question (never past the first unanswered one: the parent caps the jump), Home and End go to the ends
+  const key = (e: React.KeyboardEvent) => {
+    const to = { ArrowRight: current + 1, ArrowUp: current + 1, ArrowLeft: current - 1, ArrowDown: current - 1, Home: 0, End: total - 1 }[e.key]
+    if (to === undefined) return
+    e.preventDefault()
+    onJump(Math.min(total - 1, Math.max(0, to)))
+  }
+
   return (
-    <div className="-my-3 flex cursor-pointer touch-none py-3 select-none" aria-hidden="true"
+    <div className="-my-3 flex cursor-pointer touch-none rounded-md py-3 select-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+      role="slider" tabIndex={0} aria-label="Question" aria-orientation="horizontal"
+      aria-valuemin={1} aria-valuemax={total} aria-valuenow={current + 1} aria-valuetext={`Question ${current + 1} of ${total}`}
+      onKeyDown={key}
       onPointerDown={(e) => {
         e.preventDefault()
         try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* the drag still works while the pointer stays over the row */ }
@@ -67,6 +78,27 @@ function ProgressDots({ total, current, answered, onScrub, onJump }: {
   )
 }
 
+// The wordmark beats like the loader's while the pointer is on it (or it has keyboard focus). Leaving does not cut
+// the beat short: the current one finishes first, so the logo never snaps back from the middle of a contraction.
+function Wordmark({ onHome }: { onHome: () => void }) {
+  const [beating, setBeating] = useState(false)
+  const wanted = useRef(false)
+  const want = (on: boolean) => { wanted.current = on; if (on) setBeating(true) }
+  return (
+    <button id="logo-btn" onClick={onHome} aria-label="Tria: go to the start page" data-beating={beating || undefined}
+      onPointerEnter={() => want(true)} onPointerLeave={() => want(false)}
+      onFocus={(e) => want(e.currentTarget.matches(":focus-visible"))} onBlur={() => want(false)}
+      className="flex items-center gap-2 rounded-sm text-xl font-semibold tracking-tight text-foreground transition-colors duration-200 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+      {/* Hand-drawn wordmark; it takes the button's text colour */}
+      <svg viewBox={`0 0 ${WORDMARK.width} ${WORDMARK.height}`} className={cn("h-8 w-auto", beating && "logo-beat")} fill="none" stroke="currentColor"
+        strokeWidth={WORDMARK.stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+        onAnimationIteration={() => { if (!wanted.current) setBeating(false) }}>
+        {WORDMARK.paths.map((d) => <path key={d} d={d} />)}
+      </svg>
+    </button>
+  )
+}
+
 export function Layout({ children, screen, total, current, answered, onHome, onJump, onNavigate }: Props) {
   const [scrub, setScrub] = useState<number | null>(null)   // the dot under a drag, shown before the page follows
   const shown = scrub ?? current
@@ -75,20 +107,12 @@ export function Layout({ children, screen, total, current, answered, onHome, onJ
       <a href="#main-content" className="skip-link">Skip to main content</a>
       <div className="flex min-h-[100dvh] flex-col bg-background text-foreground">
         <header className="sticky top-0 z-50 flex items-center justify-between border-b bg-background px-5 py-3 lg:px-8">
-          <button id="logo-btn" onClick={onHome} aria-label="Tria: go to the start page"
-            className="flex items-center gap-2 rounded-sm text-xl font-semibold tracking-tight text-foreground transition-colors duration-200 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-            {/* Hand-drawn wordmark; it takes the button's text colour */}
-            <svg viewBox={`0 0 ${WORDMARK.width} ${WORDMARK.height}`} className="h-8 w-auto" fill="none" stroke="currentColor"
-              strokeWidth={WORDMARK.stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {WORDMARK.paths.map((d) => <path key={d} d={d} />)}
-            </svg>
-          </button>
+          <Wordmark onHome={onHome} />
 
           {screen === "question" ? (
-            <div className="flex items-center gap-2" role="progressbar" aria-valuemin={1} aria-valuemax={total} aria-valuenow={shown + 1}
-              aria-label={`Question ${shown + 1} of ${total}`}>
+            <div className="flex items-center gap-2">
               <ProgressDots total={total} current={shown} answered={answered} onScrub={setScrub} onJump={onJump} />
-              <span className="min-w-[2.4rem] text-right text-xs font-semibold tabular-nums text-muted-foreground">{shown + 1}/{total}</span>
+              <span className="min-w-[2.4rem] text-right text-xs font-semibold tabular-nums text-muted-foreground" aria-hidden="true">{shown + 1}/{total}</span>
             </div>
           ) : (
             <nav className="flex items-center gap-1 text-sm">

@@ -171,6 +171,14 @@ export default function App() {
     return [v, { probability: a.probability, score: riskScore(a.probability, a.threshold), high: a.high, text: pctRisk(a.probability) }]
   })) as Record<Vessel, VesselRisk>, [arteries])
 
+  // what was actually entered, so the result can say how much of it rests on assumed values
+  const answers = useMemo(() => {
+    if (example) return null
+    const keys = new Set(QUESTIONS.map((q) => q.id))
+    const given = QUESTIONS.filter((q) => touched.has(q.id) && !notSureSet.has(q.id)).length
+    return { given, of: QUESTIONS.length, optional: [...touched].filter((id) => !keys.has(id)).length }
+  }, [example, touched, notSureSet])
+
   const patientLabel = example ? `Example patient ${example.index + 1}` : patientName.trim() || "New patient"
   const caption = meta && inputs.Age !== undefined
     ? `${patientLabel}, ${Math.round(inputs.Age)}-year-old ${inputs.Sex === 1 ? "man" : "woman"}${selected ? `. ${meta.vessels[selected].full}: ${meta.vessels[selected].territory.toLowerCase()}` : ""}`
@@ -180,7 +188,7 @@ export default function App() {
     if (!meta || !prediction || !viewerRef.current || !stageRef.current) return
     setBusy(true)
     try {
-      await savePdf({ viewer: viewerRef.current, stage: stageRef.current, meta, prediction, inputs, patientLabel, example, edited, mode, plain: false })
+      await savePdf({ viewer: viewerRef.current, stage: stageRef.current, meta, prediction, inputs, patientLabel, example, edited, mode, plain: false, answers })
     } catch (e) {
       setError(`${(e as Error).message} Use your browser's print menu to save a PDF instead.`)
     } finally {
@@ -236,7 +244,7 @@ export default function App() {
 
           {screen === "results" && meta && prediction && arteries && (
             <ResultsScreen key="results" meta={meta} prediction={prediction} example={example} edited={edited} risks={risks}
-              mode={mode} selected={selected} explain={explain} view={view} bpm={inputs.PR ?? 70} caption={caption} busy={busy}
+              mode={mode} selected={selected} explain={explain} view={view} bpm={inputs.PR ?? 70} caption={caption} answers={answers} busy={busy}
               viewerRef={viewerRef} stageRef={stageRef}
               onMode={setMode} onSelect={selectVessel} onExplain={chooseExplain} onView={setView} onEdit={editFactor}
               onEditAnswers={() => { setFromResults(true); setDirection(-1); setQIndex(0); setScreen("question") }}

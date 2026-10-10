@@ -1,5 +1,5 @@
 import type { Target, Vessel } from "./types"
-import { riskColor, riskScore } from "./heart.js"
+import { riskHexFromScore, riskScore } from "./riskramp"
 
 export const TARGETS: Target[] = ["Cath", "LAD", "LCX", "RCA"]
 export const VESSELS: Vessel[] = ["LAD", "LCX", "RCA"]
@@ -16,7 +16,7 @@ export const nameOf = (t: Target, plain: boolean) => (plain ? PLAIN : TECH)[t]
 export const labelNames = (plain: boolean) => (plain ? PLAIN : TECH)
 
 // Same green → ochre → red ramp as the arteries on the heart, anchored at each model's cut-off
-export const riskHex = (p: number, threshold: number) => `#${riskColor(riskScore(p, threshold)).getHexString()}`
+export const riskHex = (p: number, threshold: number) => riskHexFromScore(riskScore(p, threshold))
 export { riskScore }
 
 export function describeLabels(labels: Record<Target, number>) {

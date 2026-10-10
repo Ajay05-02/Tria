@@ -26,16 +26,17 @@ Built for the **Multimodal AI Hackathon 2026, Track A: Cardiovascular Risk Visua
 - **Predicts** overall CAD (≥50% narrowing in any coronary artery) and stenosis of the **LAD**, **LCX** and **RCA** from 55 demographic, symptom, ECG, echocardiography and laboratory inputs.
 - **Visualises** the result on an anatomical 3D heart from the **NIH HuBMAP Human Reference Atlas** (Three.js, runs in any modern browser without a GPU; a procedural heart is kept as a fallback):
   - each coronary artery runs in its fat groove and is coloured green → ochre → red by its predicted risk. Ochre sits exactly at that artery's own decision cut-off, and the colour reaches full green 30 points below it and full red 30 points above it;
-  - click an artery, its label, or its row in the results, and the camera turns to it, highlights the heart muscle it supplies, and the explanation switches to that artery;
-  - the **Risk map** toggle colours every territory by its artery's risk;
-  - the heart beats at the patient's pulse rate (off when the system asks for reduced motion).
+  - click an artery on the heart (a few pixels beside it counts too, and a click on muscle that hides an artery does not), its label, or its row in the results: the camera turns to face the muscle it supplies, that muscle is painted in the artery's risk colour, the other labels fade, and the explanation switches to that artery;
+  - the **Risk map** toggle paints every territory in its artery's risk colour. Which muscle belongs to which artery follows the standard 17-segment map of the heart (Cerqueira et al., *Circulation* 2002) with its usual coronary assignment (Pereztol-Valdés et al., *Eur Heart J* 2005): the LAD supplies the front wall, the front of the septum and the apex; the LCX the side and back-side wall; the RCA the bottom wall and the right ventricle. It is not "the nearest artery", which paints the wrong muscle wherever a vessel happens to pass close;
+  - the heart looks like tissue, not plastic: pale epicardial fat gathers along the arteries (thick near the base, thin towards the apex, with a lumpy edge), the grooves and the places where vessels meet the muscle are softly shadowed, and the surface has fine pores, mottled colour and patchy wet shine, lit by a studio setup (`web/src/lib/heartshading.js`). The arteries keep their exact risk colours;
+  - the heart beats at the patient's pulse rate the way a ventricle does: it shortens, narrows and wrings, with the arteries and label lines moving with the surface. The PDF always shows it relaxed. Off when the system asks for reduced motion.
 - **A guided assessment** built on [Kard](https://github.com/7-Bala/Kard)'s question flow (MIT): a one-screen landing page beside the live 3D heart (no labels, no patient data), the patient's name (required; a label that stays in the browser), then the 11 key questions one per screen (animated illustrations, choice cards, a number stepper, "Not sure? Use a typical value"), an optional page for the other ~40 inputs, and a results page with a risk ring, the 3D heart, the three arteries and the main reasons. A separate page shows how accurate the model is. Built with React, Tailwind CSS, shadcn/ui and framer-motion; works on desktop, tablet and phone.
 - **Explains** every prediction with **SHAP** values in percentage points of the risk shown: the bars add up exactly to the difference between this patient and a typical study patient. Features that describe the same clinical fact are merged into one row (for example chest pain type), so nothing is counted twice. It also shows the "points" behind the published CAD Consortium risk score.
 - **Shows what it can and cannot localise:** the results page switches between each artery's risk and **"If CAD is present"**, which artery is most likely narrowed, compared with the average patient with CAD (see [Which artery?](#which-artery)).
-- **Updates in real time** (about 0.15 s per prediction) as you edit any value, and warns when an input is outside the range seen in training. Risks are shown as ">99%" or "<1%" at the extremes, never 100% or 0%.
+- **Scores in about 0.15 s** and warns, on the results page, when an input is outside the range seen in training (with the value named). Risks are shown as ">99%" or "<1%" at the extremes, never 100% or 0%. Every number you type is checked on the spot: letters and symbols are refused, and an empty or out-of-range answer says why and blocks the next step.
 - **Asks only 11 questions.** A new patient starts from typical values; the assessment asks the 11 inputs that carry almost all of the accuracy (see [How much do you need to enter?](#how-much-do-you-need-to-enter)), with progress dots in the header. The other ~40 inputs are on one optional page, grouped and searchable. Clicking a reason on the results page opens that question, with "Update my results".
-- **Starts as a blank form** for entering a new patient. The 303 study patients are available as examples; for each one the app also shows the **held-out prediction** from a model that never saw that patient, because the final model learned from all of them and is optimistic on them.
-- **Plain words** switch for patients and non-cardiologists, click-a-factor-to-edit, and **Save PDF**: a one-page A4 patient report (heart with risk-coloured arteries, probabilities against each cut-off, held-out predictions for study patients, top reasons, validation and credits), generated in the browser with jsPDF.
+- **Starts as a blank form** for entering a new patient. The 303 study patients can be opened as examples from the About page; for each one the app also shows the **held-out prediction** from a model that never saw that patient, because the final model learned from all of them and is optimistic on them.
+- **Honest about what was entered.** The results page says how many of the 11 questions were answered (and how many were "Not sure", which are set to a typical value), shows how far to trust each artery's number, and puts a caution box on any result that rests on an out-of-range value. **Save PDF** produces a one-page A4 patient report (heart with risk-coloured arteries, probabilities against each cut-off, held-out predictions for study patients, top reasons, validation and credits), generated in the browser with jsPDF; it carries the same hand-drawn wordmark as the app.
 
 ## Results (honest, leakage-free validation)
 
@@ -184,6 +185,14 @@ pip install -r requirements-dev.txt
 python -m pytest
 ```
 
+Browser tests drive the real app (the name and number checks, the full flow to the results, error messages, the PDF download, a phone-sized screen and reduced motion). They start their own server on port 7861 and use the Chrome that is installed; in CI they use Playwright's Chromium:
+
+```bash
+cd web
+npm install
+npm run test:e2e
+```
+
 Then open http://localhost:8000.
 
 To reproduce the validation numbers (about 10–30 minutes):
@@ -221,7 +230,9 @@ evaluate.py        repeated nested cross-validation → reports/evaluation_v2.js
 external_validation.py  leave-one-hospital-out check on 5 hospitals → reports/external_validation.json
 clinical_baseline.py    Tria against the ESC 2019 and CAD Consortium scores → reports/clinical_baseline.json
 tests/             pytest checks of the model and API (python -m pytest)
-web/               front end: React + Vite + Tailwind CSS + shadcn/ui (src/App.tsx, src/components/, src/lib/heart.js = the 3D scene)
+.github/workflows/ CI: Python tests, front-end build (the committed static/ must match it) and the browser tests
+web/               front end: React + Vite + Tailwind CSS + shadcn/ui (src/App.tsx, src/components/, src/lib/heart.js = the 3D scene, loaded on demand)
+web/e2e/           browser tests (Playwright), run by `npm run test:e2e` and in CI
 static/            the built web page (npm run build in web/), served by FastAPI
 static/models/     heart.glb: the Human Reference Atlas heart with named LAD, LCX and RCA meshes (CC BY 4.0)
 tools/             build_heart_glb.py, which builds heart.glb from the atlas file
@@ -237,9 +248,9 @@ PRODUCT.md         who the app is for and the product principles the design foll
 - **CAD Consortium clinical model:** Genders T.S.S. et al., *BMJ* 2012;344:e3485.
 - **eGFR:** CKD-EPI 2021 creatinine equation, Inker L.A. et al., *NEJM* 2021.
 - **Libraries:** scikit-learn, SHAP, FastAPI, React, Tailwind CSS, shadcn/ui (Radix UI), framer-motion, Three.js, jsPDF.
-- **Interface design:** the question flow, number stepper and animated illustrations are adapted from [Kard](https://github.com/7-Bala/Kard) by 7-Bala (MIT License; `web/src/components/kard/`, licence in `KARD-LICENSE.txt`). The smoking, wall-motion and ejection-fraction illustrations were added in the same style. The visual language was then audited against common "AI-generated look" patterns and reworked (one sans-serif family, neutral palette, no decorative motion, no duplicated content): see [docs/ai-look-audit.md](docs/ai-look-audit.md).
+- **Interface design:** the question flow and number stepper are adapted from [Kard](https://github.com/7-Bala/Kard) by 7-Bala (MIT License; `web/src/components/kard/`, licence in `KARD-LICENSE.txt`). The question illustrations, the hand-drawn wordmark and everything else are original to Tria. The visual language was audited against common "AI-generated look" patterns and reworked (one sans-serif family, neutral palette, no decorative motion, no duplicated content): see [docs/ai-look-audit.md](docs/ai-look-audit.md).
 - **3D heart:** HuBMAP Human Reference Atlas, 3D reference organ "heart-female" v1.0, created by Kristen Browne (NIH) from Visible Human Project data, licensed CC BY 4.0. `web/public/models/heart.glb` (copied into `static/models/` by the build) is derived from it (parts grouped, valves and small veins removed, vessels trimmed and capped, coronaries thickened, recoloured; see `web/public/models/LICENSE.txt`). Rebuild with `python tools/build_heart_glb.py VH_F_Heart.glb`.
-- **Design assets:** Public Sans typeface (SIL Open Font License), Phosphor icons (MIT).
+- **Design assets:** Geist typeface (SIL Open Font License), Lucide icons (ISC).
 
 ## Limitations
 

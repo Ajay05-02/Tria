@@ -8,9 +8,10 @@
 // theta is the angle around the long axis: 0 = anterior (+z), 90° = patient's left (+x),
 // ±180° = posterior, -90° = patient's right (-x). h runs from -1 (apex) to +1 (top of the atria).
 import * as THREE from "three";
+import { riskHexFromScore } from "./riskramp";
+import { bakeTissue, beatUniforms, colourCaps, computeTerritories, deformPoint, patchMaterial, studioScene, systole } from "./heartshading";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
@@ -174,30 +175,15 @@ function territoryWeights(h, th) {
 }
 
 // ---------------------------------------------------------------- risk colours
-// Risk ramp shared with the page (see --risk-* in style.css)
-const LOW = new THREE.Color("#2f9a68"), MID = new THREE.Color("#e0a21a"), HIGH = new THREE.Color("#c8352b");
-
-// Score 0..1 anchored so that each model's cut-off sits exactly at the ochre midpoint;
-// the colour reaches full green 30 points below the cut-off and full red 30 points above it
-const RAMP_SPAN = 0.3;
-export function riskScore(p, threshold) {
-  return p < threshold
-    ? 0.5 * Math.max(0, 1 - (threshold - p) / RAMP_SPAN)
-    : 0.5 + 0.5 * Math.min(1, (p - threshold) / RAMP_SPAN);
-}
-export function riskColor(score) {
-  const c = new THREE.Color();
-  return score < 0.5
-    ? c.lerpColors(LOW, MID, (score / 0.5) ** 2)
-    : c.lerpColors(MID, HIGH, ((score - 0.5) / 0.5) ** 0.7);
-}
+// The ramp itself lives in riskramp.ts, which the page and the PDF use too, so the colours cannot drift apart
+export const riskColor = (score) => new THREE.Color(riskHexFromScore(score));
 
 // ---------------------------------------------------------------- viewer
 export function createHeartViewer(container, { onSelect, reduceMotion = false, zoom = true, labels: showLabels = true } = {}) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  renderer.toneMappingExposure = 1.14;
   container.appendChild(renderer.domElement);
 
   const labelRenderer = new CSS2DRenderer();
@@ -207,7 +193,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
 
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+  scene.environment = pmrem.fromScene(studioScene(), 0.05).texture;
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
   const HOME = { pos: new THREE.Vector3(0.85, 0.85, 5.5), target: new THREE.Vector3(0.2, 0.45, 0) };
@@ -268,6 +254,9 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
   let nv = pos.count;
   let baseColors = new Float32Array(nv * 3);
   let terr = new Float32Array(nv * 3);
+  let fatAt = new Float32Array(nv);            // how much of each muscle vertex is fat (it is never tinted)
+  const arteryDots = {};                       // each artery as a few hundred points, for clicking near it
+  let heartCentre = new THREE.Vector3();
   // Real tissue colours: dark red myocardium, purplish atria, yellow epicardial fat in the grooves
   const MUSCLE_DARK = new THREE.Color("#3e0e11"), MUSCLE_LIGHT = new THREE.Color("#66201d");
   const ATRIUM = new THREE.Color("#43141f"), FAT = new THREE.Color("#ead6a8"), FAT_DEEP = new THREE.Color("#cdae74");
@@ -377,7 +366,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
     div.setAttribute("aria-label", `${name}: select this artery`);
     div.addEventListener("click", (e) => { e.stopPropagation(); select(name); onSelect?.(name); });
     anchor.add(new CSS2DObject(div));
-    labels[name] = { anchor, div, leader };
+    labels[name] = { anchor, div, leader, rest: onArtery.clone() };
   }
   let labelNames = {};
   for (const [name, spec] of Object.entries(ARTERIES)) {
@@ -486,16 +475,23 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
     // myocardium: baked tissue colour (sRGB) and coronary territory weights from the build script
     const myo = part("myocardium");
     const geo = myo.geometry;
-    geo.computeVertexNormals();
+    // fat along the arteries, occlusion in the grooves, and the beat's frame (see heartshading.js)
+    const { fat, frame } = bakeTissue(Object.fromEntries(["myocardium", "LAD", "LCX", "RCA", "LM", "aorta", "pulmonary", "pulmonary_veins", "SVC", "IVC", "veins"]
+      .map((n) => [n, part(n)?.geometry]).filter(([, g]) => g)));
+    framed = true;
     const tissueAttr = geo.getAttribute("_tissue");
     nv = geo.getAttribute("position").count;
     baseColors = new Float32Array(nv * 3);
     const c = new THREE.Color();
+    const atrium = new Uint8Array(nv);                  // the build script paints atria pinker than ventricles
     for (let i = 0; i < nv; i++) {
       c.setRGB(tissueAttr.getX(i), tissueAttr.getY(i), tissueAttr.getZ(i), THREE.SRGBColorSpace);
       baseColors.set([c.r, c.g, c.b], i * 3);
+      atrium[i] = tissueAttr.getY(i) > 0.17 ? 1 : 0;
     }
-    terr = new Float32Array(geo.getAttribute("_territory").array);
+    fatAt = fat;
+    // which artery supplies which muscle: the standard 17-segment map, not "the nearest artery"
+    terr = computeTerritories(Object.fromEntries(["myocardium", "LAD", "LCX", "RCA"].map((n) => [n, part(n).geometry])), frame, atrium);
     geo.setAttribute("color", new THREE.BufferAttribute(baseColors.slice(), 3));
     g = geo;
     // Clean, glossy textbook finish (smooth colours are baked by the build script)
@@ -503,16 +499,18 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
       roughness: 0.4, metalness: 0, clearcoat: 0.55, clearcoatRoughness: 0.24, envMapIntensity: 0.8,
       sheen: 0.12, sheenColor: new THREE.Color("#ff9a9a"), sheenRoughness: 0.4,
     };
-    myocardium = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({ vertexColors: true, ...gloss }));
+    const muscle = new THREE.MeshPhysicalMaterial({ vertexColors: true, ...gloss });
+    patchMaterial(muscle, { shade: "tissue" });
+    myocardium = new THREE.Mesh(geo, muscle);
     anat.add(myocardium);
 
     // coronary arteries, coloured by risk
     for (const name of ["LAD", "LCX", "RCA", "LM"]) {
       const mat = arteryMaterial();
       mat.side = THREE.DoubleSide;           // the capped vessel ends are fans of either winding
+      patchMaterial(mat, { shade: "none" }); // the beat only: an artery's colour is its risk, so nothing may change it
       vesselMaterials[name] = mat;
       const src = part(name);
-      src.geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(src.geometry, mat);
       mesh.userData.vessel = name === "LM" ? null : name;
       anat.add(mesh);
@@ -523,13 +521,15 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
     const glossy = (color) => new THREE.MeshPhysicalMaterial({ color, ...gloss, sheen: 0 });
     const RED_VESSEL = glossy(0x9e2626), BLUE_VESSEL = glossy(0x35579f), BLUE_VEIN = glossy(0x2a4689);
     BLUE_VEIN.side = THREE.DoubleSide;
+    for (const m of [RED_VESSEL, BLUE_VESSEL, BLUE_VEIN]) patchMaterial(m, { shade: "vessel" });
     // cut vessel ends, drawn as a dark lumen like a textbook specimen
-    const LUMEN = new THREE.MeshStandardMaterial({ color: 0x2a0a0e, roughness: 0.7, side: THREE.DoubleSide });
+    const LUMEN = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, side: THREE.DoubleSide });
+    patchMaterial(LUMEN, { shade: "none" });
+    if (part("caps")) colourCaps(part("caps").geometry, Object.fromEntries(["aorta", "pulmonary", "pulmonary_veins", "SVC", "IVC"].map((n) => [n, part(n)?.geometry])));
     for (const [name, mat] of [["aorta", RED_VESSEL], ["pulmonary", BLUE_VESSEL], ["pulmonary_veins", RED_VESSEL],
       ["SVC", BLUE_VESSEL], ["IVC", BLUE_VESSEL], ["veins", BLUE_VEIN], ["caps", LUMEN]]) {
       const src = part(name);
       if (!src) continue;
-      src.geometry.computeVertexNormals();
       anat.add(new THREE.Mesh(src.geometry, mat));
     }
 
@@ -561,11 +561,10 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
     };
     for (const name of ["LAD", "LCX", "RCA"]) {
       const p = part(name).geometry.getAttribute("position");
-      const v = new THREE.Vector3(), mean = new THREE.Vector3(), best = new THREE.Vector3();
+      const v = new THREE.Vector3(), best = new THREE.Vector3();
       let bestScore = -Infinity;
       for (let i = 0; i < p.count; i++) {
         v.fromBufferAttribute(p, i);
-        mean.add(v);
         const rel = v.clone().sub(centre);
         // LAD and RCA: the visible front point furthest towards the label's side. LCX runs mostly behind the
         // heart, so it uses its furthest up-and-out point (the lateral edge near the base) wherever it is.
@@ -573,13 +572,27 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
         const score = rel.dot(SIDE[name]) + (name === "LCX" ? 0.15 : 0.4) * rel.z;
         if (score > bestScore) { bestScore = score; best.copy(v); }
       }
-      mean.divideScalar(p.count);
       const out = SIDE[name].clone().add(new THREE.Vector3(0, 0, 0.25)).normalize();
       // "facing" direction for the behind-the-heart check: mostly forward, a little towards the label's side
       const facing = SIDE[name].clone().multiplyScalar(0.3).add(front).normalize();
       makeLabel(name, best.clone(), best.clone().addScaledVector(out, 0.55), facing, anat);
-      viewDirs[name] = mean.clone().sub(centre).normalize().multiplyScalar(0.8).add(front.clone().multiplyScalar(0.35)).normalize();
+      // the camera goes to where the muscle this artery supplies faces, and stays level so the heart is never upside down
+      const k = ["LAD", "LCX", "RCA"].indexOf(name), mp = geo.getAttribute("position"), from = new THREE.Vector3(), toward = new THREE.Vector3();
+      let weight = 0;
+      for (let i = 0; i < nv; i++) {
+        const w = terr[i * 3 + k] ** 2;
+        if (w < 0.04) continue;
+        toward.add(from.fromBufferAttribute(mp, i).multiplyScalar(w)); weight += w;
+      }
+      const d = toward.multiplyScalar(1 / (weight || 1)).sub(centre).normalize().add(front.clone().multiplyScalar(0.3));
+      d.y = Math.min(0.5, Math.max(-0.12, d.y));
+      viewDirs[name] = d.normalize();
+      // a few hundred points along the artery, to find it from a click that lands near it
+      const pts = new Float32Array(Math.ceil(p.count / 3) * 3);
+      for (let i = 0, j = 0; i < p.count; i += 3, j += 3) { pts[j] = p.getX(i); pts[j + 1] = p.getY(i); pts[j + 2] = p.getZ(i); }
+      arteryDots[name] = pts;
     }
+    heartCentre.copy(centre);
     HOME.pos.set(0.25, 0.7, 8.4);
     HOME.target.copy(centre).add(new THREE.Vector3(0, 0.5, 0));
     controls.target.copy(HOME.target);
@@ -608,20 +621,30 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
   let camTween = null;
   const vesselColor = { LAD: new THREE.Color(0x888888), LCX: new THREE.Color(0x888888), RCA: new THREE.Color(0x888888) };
 
+  // Paints each artery's territory in the artery's risk colour. Blending a colour into dark red gives brown and
+  // olive, so a territory takes the risk colour itself, scaled by how bright the muscle underneath is, which keeps
+  // the shading and the texture. Each territory uses only its own colour and its own strength, never a mix, so the
+  // seam between two is a clean edge and an unselected neighbour never leaks into the one that is selected.
+  //   selected: its territory is painted strongly and the rest left alone
+  //   Risk map: every territory is painted
+  //   both:     the selected one strongly, the others faintly
+  // Fat is never painted.
   function recolorMyocardium() {
     const colors = g.attributes.color;
     const names = ["LAD", "LCX", "RCA"];
+    const strength = names.map((n) => (selected === n ? 0.8 : showTerritories ? (selected ? 0.3 : 0.58) : 0));
+    const painting = risks && strength.some((s) => s > 0);
+    const edge = (x) => { const t = Math.min(1, Math.max(0, (x - 0.38) / 0.24)); return t * t * (3 - 2 * t); };
     for (let i = 0; i < nv; i++) {
       let r = baseColors[i * 3], gg = baseColors[i * 3 + 1], b = baseColors[i * 3 + 2];
-      if (risks) {
+      if (painting) {
+        const lit = Math.min(1.25, Math.max(0.6, 0.62 + (0.2126 * r + 0.7152 * gg + 0.0722 * b) * 7.5));
         for (let k = 0; k < 3; k++) {
-          const name = names[k];
-          // Selected artery: highlight the muscle it supplies. "Risk map": tint every territory.
-          const strength = selected === name ? 0.32 : showTerritories ? (selected ? 0.16 : 0.4) : 0;
-          if (!strength) continue;
-          const w = terr[i * 3 + k] * strength;
-          const c = vesselColor[name];
-          r += (c.r - r) * w; gg += (c.g - gg) * w; b += (c.b - b) * w;
+          if (!strength[k]) continue;
+          const cover = strength[k] * edge(terr[i * 3 + k]) * (1 - 0.85 * fatAt[i]);
+          if (cover <= 0) continue;
+          const c = vesselColor[names[k]];
+          r += (c.r * lit - r) * cover; gg += (c.g * lit - gg) * cover; b += (c.b * lit - b) * cover;
         }
       }
       colors.setXYZ(i, r, gg, b);
@@ -661,6 +684,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
   function select(name) {
     selected = name;
     for (const [n, { div }] of Object.entries(labels)) {
+      div.classList.toggle("dim", name !== null && n !== name);
       div.classList.toggle("selected", n === name);
       div.setAttribute("aria-pressed", String(n === name));
     }
@@ -675,15 +699,37 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
   }
 
   // ---------------------------------------------------------------- interaction
-  const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   let downAt = null;
+  // An artery is a few pixels wide, so a click has to count when it lands near one, not only on it. (The fat
+  // that lies beside the artery stands slightly proud of it, so a click on the artery's edge often hits fat first.)
+  // The nearest visible artery within reach of the click is the one clicked. Each artery is a few hundred points,
+  // placed where the artery is NOW: the beat moves the surface in the shader, which three's ray casting cannot see,
+  // so a ray would be tested against a heart that is no longer where it is drawn.
+  // "Visible" is the half of the heart that faces the camera, which is exact enough for a body this convex.
+  const dot = new THREE.Vector3(), rest = new THREE.Vector3(), toCamera = new THREE.Vector3(), outward = new THREE.Vector3();
+  const placed = (pts, j) => deformPoint(dot, rest.set(pts[j], pts[j + 1], pts[j + 2]), lastS);
+  function nearestArtery(px, py, reach, rect, only = null) {
+    toCamera.copy(camera.position).sub(heartCentre).normalize();
+    let best = reach, name = null, at = null;
+    for (const [n, pts] of Object.entries(arteryDots)) {
+      if (only && n !== only) continue;
+      for (let j = 0; j < pts.length; j += 3) {
+        placed(pts, j);
+        if (outward.copy(dot).sub(heartCentre).normalize().dot(toCamera) < -0.02) continue;     // on the far side
+        dot.project(camera);
+        if (dot.z > 1) continue;
+        const sx = (dot.x * 0.5 + 0.5) * rect.width, sy = (-dot.y * 0.5 + 0.5) * rect.height;
+        const d = Math.hypot(sx - px, sy - py);
+        if (d < best) { best = d; name = n; at = { x: sx, y: sy }; }
+      }
+    }
+    return { name, at, dist: best };
+  }
   function pick(ev) {
     const rect = renderer.domElement.getBoundingClientRect();
-    pointer.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
-    raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects([myocardium, ...vesselMeshes], false)[0];
-    return hit && hit.object.userData.vessel ? hit.object.userData.vessel : null;
+    const px = ev.clientX - rect.left, py = ev.clientY - rect.top;
+    return nearestArtery(px, py, ev.pointerType === "touch" ? 24 : 13, rect).name;
   }
   renderer.domElement.addEventListener("pointerdown", (ev) => { downAt = [ev.clientX, ev.clientY]; });
   renderer.domElement.addEventListener("pointerup", (ev) => {
@@ -719,11 +765,29 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
 
   const clock = new THREE.Clock();
   let phase = 0;
+  // Squeeze the heart to `s` (0..1): the shaders read the uniform, and each label's leader line is moved to
+  // where its artery now is, with the same maths, so it stays on the surface
+  let lastS = -1, frozen = null, framed = false;        // `framed`: the anatomical model is loaded, so the beat can deform it
+  const moved = new THREE.Vector3();
+  function pose(s) {
+    if (Math.abs(s - lastS) < 1e-4) return;
+    lastS = s;
+    beatUniforms.uSys.value = s;
+    for (const { leader, rest } of Object.values(labels)) {
+      if (!rest) continue;
+      deformPoint(moved, rest, s);
+      const p = leader.geometry.getAttribute("position");
+      p.setXYZ(0, moved.x, moved.y, moved.z);
+      p.needsUpdate = true;
+    }
+  }
   const camDir = new THREE.Vector3(), wp = new THREE.Vector3(), wn = new THREE.Vector3();
   renderer.setAnimationLoop((time) => {
     const dt = clock.getDelta();
-    if (beating) {
-      phase = (phase + dt * bpm / 60) % 1;
+    if (beating) phase = (phase + dt * bpm / 60) % 1;
+    if (framed) {
+      pose(frozen ?? (beating ? systole(phase) : 0));
+    } else if (beating) {
       const atrial = phase < 0.12 ? Math.sin(Math.PI * phase / 0.12) : 0;
       const ventricular = phase > 0.14 && phase < 0.5 ? Math.sin(Math.PI * (phase - 0.14) / 0.36) ** 1.5 : 0;
       const radial = 1 - 0.034 * ventricular - 0.007 * atrial;
@@ -766,7 +830,7 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
     }
   });
 
-  return {
+  const api = {
     setRisks,
     select,
     // Display names for the artery labels (plain-words mode)
@@ -779,13 +843,48 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
     snapshot: (scale = 1) => {
       const ratio = renderer.getPixelRatio(), w = container.clientWidth, h = container.clientHeight;
       if (scale !== 1) { renderer.setPixelRatio(ratio * scale); renderer.setSize(w, h, false); }
+      const squeeze = lastS;                       // printed relaxed, whatever moment of the beat it is
+      if (framed) pose(0);
       renderer.render(scene, camera);
       const url = renderer.domElement.toDataURL("image/png");
+      if (framed && squeeze > 0) pose(squeeze);
       if (scale !== 1) { renderer.setPixelRatio(ratio); renderer.setSize(w, h, false); renderer.render(scene, camera); }
       return url;
     },
     setHeartRate: (value) => { bpm = THREE.MathUtils.clamp(value || 70, 30, 180); },
-    setBeating: (on) => { beating = on; },
+    // How far (in pixels) the nearest visible artery is from a point of the figure: for the tests, to find empty space
+    distanceToArteries: (x, y) => nearestArtery(x, y, 1e9, renderer.domElement.getBoundingClientRect()).dist,
+    // Where an artery is on screen, in pixels from the figure's top left: the nearest visible point to the middle
+    screenPointOf: (name) => {
+      const rect = renderer.domElement.getBoundingClientRect(), cx = rect.width / 2, cy = rect.height / 2;
+      toCamera.copy(camera.position).sub(heartCentre).normalize();
+      const shown = {};
+      for (const [n, pts] of Object.entries(arteryDots)) {
+        shown[n] = [];
+        for (let j = 0; j < pts.length; j += 3) {
+          placed(pts, j);
+          if (outward.copy(dot).sub(heartCentre).normalize().dot(toCamera) < 0.1 || dot.project(camera).z > 1) continue;
+          shown[n].push({ x: (dot.x * 0.5 + 0.5) * rect.width, y: (-dot.y * 0.5 + 0.5) * rect.height });
+        }
+      }
+      let best = null, bestScore = -Infinity;
+      for (const p of shown[name] ?? []) {
+        let clearance = 60;
+        for (const [n, list] of Object.entries(shown)) if (n !== name) for (const q of list) clearance = Math.min(clearance, Math.hypot(p.x - q.x, p.y - q.y));
+        const score = clearance - 0.02 * Math.hypot(p.x - cx, p.y - cy);
+        if (score > bestScore) { bestScore = score; best = p; }
+      }
+      return best;
+    },
+    // Put the camera on the side of the heart given by a direction (x right, y up, z towards the viewer): for tests and stills
+    lookFrom: (x, y, z) => {
+      const dist = camera.position.distanceTo(controls.target);
+      camera.position.copy(controls.target).addScaledVector(new THREE.Vector3(x, y, z).normalize(), dist);
+      camTween = null;
+    },
+    setBeating: (on) => { beating = on; frozen = null; },
+    // Hold the heart at one moment of the squeeze (0 relaxed .. 1 fully squeezed); used by the tests and for stills
+    freezeAt: (s) => { frozen = s; },
     setTerritories: (on) => { showTerritories = on; recolorMyocardium(); },
     // Stop rendering and remove the canvas and labels (React unmounts the viewer this way)
     dispose: () => {
@@ -803,4 +902,6 @@ export function createHeartViewer(container, { onSelect, reduceMotion = false, z
       controls.target.copy(HOME.target);
     },
   };
+  container.__viewer = api;          // a handle for the browser tests
+  return api;
 }

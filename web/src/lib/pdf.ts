@@ -69,9 +69,10 @@ export interface ReportInput {
   edited: boolean
   mode: "risk" | "cond"
   plain: boolean
+  answers: { given: number; of: number; optional: number } | null    // null for a study patient
 }
 
-export async function savePdf({ viewer, stage, meta, prediction: p, inputs, patientLabel, example, edited, mode, plain }: ReportInput) {
+export async function savePdf({ viewer, stage, meta, prediction: p, inputs, patientLabel, example, edited, mode, plain, answers }: ReportInput) {
   const [{ jsPDF }, heart] = await Promise.all([import("jspdf"), heartImage(viewer, stage)])
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" })
   const ink: RGB = [24, 24, 27], ink2: RGB = [82, 82, 91], ink3: RGB = [113, 113, 122], rule: RGB = [228, 228, 231]
@@ -92,6 +93,12 @@ export async function savePdf({ viewer, stage, meta, prediction: p, inputs, pati
   if (example) {
     doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...ink2)
       .text(`Angiography result: ${describeLabels(example.labels)}.${edited ? " Values edited since loading." : ""}`, M, 43)
+  } else if (answers) {
+    const unsure = answers.of - answers.given
+    doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...ink2)
+      .text(unsure === 0
+        ? `All ${answers.of} questions answered${answers.optional ? `, plus ${answers.optional} optional result${answers.optional === 1 ? "" : "s"}` : ""}. Everything else is a typical value from the study.`
+        : `${answers.given} of ${answers.of} questions answered; the other ${unsure} are set to a typical value, which makes this result less reliable.`, M, 43)
   }
 
   // heart (left)

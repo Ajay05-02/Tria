@@ -1,11 +1,11 @@
-import { useEffect, useRef, type RefObject } from "react"
+import { useEffect, useRef, useState, type RefObject } from "react"
 import { FileDown, HeartPulse, Layers, RotateCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { createHeartViewer, type HeartViewer, type VesselRisk } from "@/lib/heart.js"
+import type { HeartViewer, VesselRisk } from "@/lib/heart.js"
 import { labelNames } from "@/lib/format"
 import type { Vessel } from "@/lib/types"
 
@@ -34,28 +34,39 @@ export function HeartView({ viewerRef, stageRef, risks, selected, plain, bpm, vi
   const onSelectRef = useRef(onSelect)
   onSelectRef.current = onSelect
 
-  // The Three.js scene is created once and removed when the component unmounts
+  // The Three.js scene is loaded when this component appears (it is a separate download, so the pages that do
+  // not show a heart never fetch it), created once, and removed when the component unmounts. `ready` makes the
+  // settings below apply once it exists, however long the download took.
+  const [ready, setReady] = useState(false)
   useEffect(() => {
-    const viewer = createHeartViewer(stageRef.current!, {
-      onSelect: (v) => onSelectRef.current(v as Vessel | null),
-      reduceMotion,
+    let gone = false
+    let viewer: HeartViewer | null = null
+    import("@/lib/heart.js").then(({ createHeartViewer }) => {
+      if (gone || !stageRef.current) return
+      viewer = createHeartViewer(stageRef.current, {
+        onSelect: (v) => onSelectRef.current(v as Vessel | null),
+        reduceMotion,
+      })
+      viewerRef.current = viewer
+      setReady(true)
     })
-    viewerRef.current = viewer
     return () => {
-      viewer.dispose()
+      gone = true
+      viewer?.dispose()
       viewerRef.current = null
+      setReady(false)
     }
   }, [viewerRef, stageRef])
 
-  useEffect(() => { if (risks) viewerRef.current?.setRisks(risks) }, [risks, viewerRef])
-  useEffect(() => { viewerRef.current?.select(selected) }, [selected, viewerRef])
-  useEffect(() => { viewerRef.current?.setLabelNames(labelNames(plain)) }, [plain, viewerRef])
-  useEffect(() => { viewerRef.current?.setHeartRate(bpm) }, [bpm, viewerRef])
+  useEffect(() => { if (risks) viewerRef.current?.setRisks(risks) }, [risks, viewerRef, ready])
+  useEffect(() => { viewerRef.current?.select(selected) }, [selected, viewerRef, ready])
+  useEffect(() => { viewerRef.current?.setLabelNames(labelNames(plain)) }, [plain, viewerRef, ready])
+  useEffect(() => { viewerRef.current?.setHeartRate(bpm) }, [bpm, viewerRef, ready])
   useEffect(() => {
     const v = viewerRef.current
     v?.setTerritories(view.includes("riskmap"))
     v?.setBeating(view.includes("beat"))
-  }, [view, viewerRef])
+  }, [view, viewerRef, ready])
 
   return (
     <Card className="relative flex h-full min-h-[420px] flex-col gap-0 overflow-hidden p-0">

@@ -1,11 +1,11 @@
 // Landing page: the message and one call to action beside the live 3D heart. It carries no patient data and no
-// labels: the arteries stay neutral until someone has answered the questions
+// labels: the arteries drift through the colour ramp as a demonstration of what the colours mean
 import { useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { createHeartViewer } from "@/lib/heart.js"
+import type { HeartViewer } from "@/lib/heart.js"
 import type { Meta } from "@/lib/types"
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -22,16 +22,32 @@ export function HeroScreen({ meta, onStart }: Props) {
   ]
   const stageRef = useRef<HTMLDivElement | null>(null)
 
-  // The same Three.js heart as the results page; the wheel is left to the page so the landing still scrolls
+  // The same Three.js heart as the results page, loaded after the first paint (it is a separate download); the
+  // wheel is left to the page so the landing still scrolls. The arteries drift slowly through the whole ramp,
+  // green to red and back, each on its own beat, to show what the colours will mean. No numbers and no labels:
+  // it is a demonstration, not anyone's result. With "reduce motion" they stay grey.
   useEffect(() => {
-    let picked: string | null = null
-    const viewer = createHeartViewer(stageRef.current!, {
-      reduceMotion, zoom: false, labels: false,
-      onSelect: (v) => { picked = v === picked ? null : v; viewer.select(picked) },
+    let gone = false, frame = 0
+    let viewer: HeartViewer | null = null
+    import("@/lib/heart.js").then(({ createHeartViewer }) => {
+      if (gone || !stageRef.current) return
+      viewer = createHeartViewer(stageRef.current, { reduceMotion, zoom: false, labels: false })
+      viewer.setBeating(!reduceMotion)
+      viewer.setTerritories(false)
+      if (reduceMotion) return
+      const start = performance.now()
+      const sweep = () => {
+        const t = (performance.now() - start) / 1000
+        const at = (phase: number) => 0.5 + 0.44 * Math.sin((t / 17) * 2 * Math.PI + phase)
+        viewer!.setRisks(Object.fromEntries(["LAD", "LCX", "RCA"].map((v, i) => {
+          const score = at(i * 2.1)
+          return [v, { probability: score, score, high: score > 0.5 }]
+        })) as Parameters<HeartViewer["setRisks"]>[0])
+        frame = requestAnimationFrame(sweep)
+      }
+      sweep()
     })
-    viewer.setBeating(!reduceMotion)
-    viewer.setTerritories(false)
-    return () => viewer.dispose()
+    return () => { gone = true; cancelAnimationFrame(frame); viewer?.dispose() }
   }, [])
 
   const rise = (delay: number) => ({ initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } })
@@ -45,7 +61,7 @@ export function HeroScreen({ meta, onStart }: Props) {
             Coronary risk, mapped onto the heart.
           </motion.h1>
           <motion.p {...rise(0.15)} className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
-            Answer {n} questions. Tria estimates the chance of coronary artery disease and shows which artery is most at risk.
+            Add a name and answer {n} questions. Tria estimates the chance of coronary artery disease and shows which artery is most at risk.
           </motion.p>
           <motion.div {...rise(0.25)} className="mt-8">
             <Button size="lg" onClick={onStart} disabled={!meta} className="h-11 rounded-lg px-6 text-[0.95rem] font-semibold">

@@ -154,18 +154,14 @@ export const IllusCholesterol = ({ className }: Props) => (
     </clipPath>
     <rect className="f-tint" x="0" y="40" width="320" height="108"/>
     <rect className="f-rose-1" x="0" y="51" width="320" height="86"/>
-    <g clipPath="url(#il-ch)"><g className="il-ch-cell" style={{ offsetPath: "path('M-24 78C70 78 120 88 176 88C232 88 262 76 344 74')", animationDelay: "0s" }}><ellipse className="f-rose" rx="11" ry="8.5"/>
-    <ellipse className="f-bg" opacity="0.26" rx="5.5" ry="3.6"/>
-    </g>
-    <g className="il-ch-cell" style={{ offsetPath: "path('M-24 78C70 78 120 88 176 88C232 88 262 76 344 74')", animationDelay: "-5s" }}><ellipse className="f-rose" rx="11" ry="8.5"/>
-    <ellipse className="f-bg" opacity="0.26" rx="5.5" ry="3.6"/>
-    </g>
-    <g className="il-ch-cell" style={{ offsetPath: "path('M-24 112C70 112 112 90 176 88C240 86 262 108 344 112')", animationDelay: "-2.5s" }}><ellipse className="f-rose" rx="11" ry="8.5"/>
-    <ellipse className="f-bg" opacity="0.26" rx="5.5" ry="3.6"/>
-    </g>
-    <g className="il-ch-cell" style={{ offsetPath: "path('M-24 112C70 112 112 90 176 88C240 86 262 108 344 112')", animationDelay: "-7.5s" }}><ellipse className="f-rose" rx="11" ry="8.5"/>
-    <ellipse className="f-bg" opacity="0.26" rx="5.5" ry="3.6"/>
-    </g>
+    <g clipPath="url(#il-ch)"><g>{motion && <animateMotion dur="10s" begin="0s" repeatCount="indefinite" rotate="auto" path="M-24 78C70 78 120 88 176 88C232 88 262 76 344 74" />}<ellipse className="f-rose" rx="11" ry="8.5"/>
+    <ellipse className="f-bg" opacity="0.26" rx="5.5" ry="3.6"/></g>
+    <g>{motion && <animateMotion dur="10s" begin="-5s" repeatCount="indefinite" rotate="auto" path="M-24 78C70 78 120 88 176 88C232 88 262 76 344 74" />}<ellipse className="f-rose" rx="11" ry="8.5"/>
+    <ellipse className="f-bg" opacity="0.26" rx="5.5" ry="3.6"/></g>
+    <g>{motion && <animateMotion dur="10s" begin="-2.5s" repeatCount="indefinite" rotate="auto" path="M-24 112C70 112 112 90 176 88C240 86 262 108 344 112" />}<ellipse className="f-rose" rx="11" ry="8.5"/>
+    <ellipse className="f-bg" opacity="0.26" rx="5.5" ry="3.6"/></g>
+    <g>{motion && <animateMotion dur="10s" begin="-7.5s" repeatCount="indefinite" rotate="auto" path="M-24 112C70 112 112 90 176 88C240 86 262 108 344 112" />}<ellipse className="f-rose" rx="11" ry="8.5"/>
+    <ellipse className="f-bg" opacity="0.26" rx="5.5" ry="3.6"/></g>
     </g>
     <path className="f-wall" d="M124 51C152 51 162 71 188 71C214 71 224 51 252 51Z"/>
     <path className="f-wall" d="M80 137C118 137 130 103 164 103C198 103 210 137 248 137Z"/>
