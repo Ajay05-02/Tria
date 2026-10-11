@@ -1,5 +1,5 @@
 import { expect, test } from "./fixtures"
-import { answerCurrent, answerAll, NAME, reachResults, startAssessment } from "./helpers"
+import { answerCurrent, answerAll, holdResult, NAME, reachResults, scalesOver, startAssessment } from "./helpers"
 
 test("the landing heart has no labels and no patient data @heart", async ({ page }) => {
   await page.goto("/")
@@ -70,14 +70,12 @@ test("an unreachable server gives a message you can act on", async ({ page }) =>
 test("while the result is worked out, the wordmark beats: it contracts and expands", async ({ page }) => {
   await startAssessment(page)
   await answerAll(page)
-  await page.route("**/api/predict", async (route) => { await new Promise((r) => setTimeout(r, 4000)); await route.continue() })
+  const release = await holdResult(page)
   await page.getByRole("button", { name: /see my results/i }).click()
-  const mark = page.locator(".loader-mark")
-  await expect(mark).toBeVisible()
+  await expect(page.locator(".loader-mark")).toBeVisible()
   await page.waitForTimeout(900)                       // the strokes have been written; the beat starts
-  const scale = () => mark.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a)
-  const seen: number[] = []
-  for (let i = 0; i < 40; i++) { seen.push(await scale()); await page.waitForTimeout(50) }
+  const seen = await scalesOver(page, 2300)            // two beats
+  release()
   expect(Math.min(...seen), "it contracts").toBeLessThan(0.97)
   expect(Math.max(...seen), "it expands past rest").toBeGreaterThan(1.03)
 })
@@ -238,13 +236,12 @@ test.describe("with reduced motion", () => {
   test("the loader holds still", async ({ page }) => {
     await startAssessment(page)
     await answerAll(page)
-    await page.route("**/api/predict", async (route) => { await new Promise((r) => setTimeout(r, 2500)); await route.continue() })
+    const release = await holdResult(page)
     await page.getByRole("button", { name: /see my results/i }).click()
-    const mark = page.locator(".loader-mark")
-    await expect(mark).toBeVisible()
+    await expect(page.locator(".loader-mark")).toBeVisible()
     await page.waitForTimeout(500)
-    const scales = []
-    for (let i = 0; i < 10; i++) { scales.push(await mark.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a)); await page.waitForTimeout(80) }
+    const scales = await scalesOver(page, 800)
+    release()
     expect(new Set(scales).size).toBe(1)
   })
   test("no illustration is animated", async ({ page }) => {

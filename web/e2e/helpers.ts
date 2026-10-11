@@ -11,6 +11,28 @@ export async function startAssessment(page: Page, name = NAME) {
   await expect(page.getByRole("heading", { level: 2 })).toHaveText("How old is the patient?")
 }
 
+// Holds the server's answer until `release()` is called, so a screen that shows while the result is worked out stays
+// on screen exactly as long as the test needs it: not a fixed time, which a slow machine can overrun.
+export async function holdResult(page: Page) {
+  let release!: () => void
+  const gate = new Promise<void>((resolve) => { release = resolve })
+  await page.route("**/api/predict", async (route) => { await gate; await route.continue() })
+  return release
+}
+
+// What the loader's wordmark does over `ms`, measured inside the page on every frame, so slow round trips between the
+// test and the browser cannot distort it
+export function scalesOver(page: Page, ms: number) {
+  return page.locator(".loader-mark").evaluate((el, ms) => new Promise<number[]>((done) => {
+    const seen: number[] = [], t0 = performance.now()
+    const tick = () => {
+      seen.push(new DOMMatrix(getComputedStyle(el).transform).a)
+      if (performance.now() - t0 < ms) requestAnimationFrame(tick); else done(seen)
+    }
+    tick()
+  }), ms)
+}
+
 // Answers the current question with the first option (or just moves on, for a number) and waits for the next one
 export async function answerCurrent(page: Page) {
   const heading = page.getByRole("heading", { level: 2 })

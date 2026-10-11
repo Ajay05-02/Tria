@@ -196,6 +196,13 @@ npm run test:e2e
 
 Then open http://localhost:8000.
 
+Before pushing, run the checks CI runs, in the same order (Python tests, types, lint, build, that the committed `static/` matches the build, and the browser tests as CI runs them), so GitHub is not the first place they run:
+
+```bash
+cd web
+npm run verify
+```
+
 To reproduce the validation numbers (about 10–30 minutes):
 
 ```bash
